@@ -1,0 +1,1019 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Dashboard | Cursos — KAMI For Education</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#332c2d;--card:#463e3f;--border:#5c5254;--accent:#7c6af7;--accent2:#f76a8c;--accent3:#6af7c8;--accent4:#f7c26a;--text:#f0eee8;--muted:#c4b8b9;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;padding:24px;}
+header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;background:#e73a57;border-radius:14px;padding:20px 24px;}
+header h1{font-size:1.7rem;font-weight:800;line-height:1.15;color:#f0eee8;}
+header h1 .hl{color:#f0eee8;}
+header .header-sub{font-size:.82rem;color:#f0eee8;margin-top:5px;line-height:1.6;opacity:.9;}
+header .header-sub strong{color:#f0eee8;font-weight:600;}
+.badge{background:var(--accent);color:#fff;font-size:.75rem;font-weight:600;padding:4px 12px;border-radius:20px;}
+
+/* ── Filter bar ── */
+.filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 18px;margin-bottom:20px;}
+.filter-bar label{font-size:.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-right:4px;}
+.fgroup{position:relative;}
+.fbtn{background:var(--border);color:var(--text);border:1px solid transparent;border-radius:8px;padding:7px 14px;font-size:.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s,border-color .15s;}
+.fbtn:hover,.fbtn.open{background:#5c5254;border-color:#e1092b;}
+.fbtn.has-sel{border-color:#e1092b;background:rgba(225,9,43,.12);}
+.fbadge{background:#e1092b;color:#fff;border-radius:10px;font-size:.68rem;font-weight:700;padding:1px 6px;min-width:18px;text-align:center;}
+.fdrop{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:100;background:#3a3334;border:1px solid var(--border);border-radius:10px;padding:10px 0;min-width:230px;max-height:320px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.6);}
+.fdrop.open{display:block;}
+.fdrop-item{display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:pointer;font-size:.82rem;color:var(--text);transition:background .1s;}
+.fdrop-item:hover{background:rgba(124,106,247,.1);}
+.fdrop-item input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;flex-shrink:0;}
+.fdrop-sep{height:1px;background:var(--border);margin:4px 0;}
+.fdrop-todos{font-weight:700;color:var(--text)!important;border-bottom:1px solid var(--border);margin-bottom:2px;}
+.btn-clear-all{margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:7px 14px;font-size:.78rem;cursor:pointer;transition:border-color .15s,color .15s;}
+.btn-clear-all:hover{border-color:var(--accent2);color:var(--accent2);}
+#filter-info{font-size:.78rem;color:var(--muted);white-space:nowrap;}
+#filter-info strong{color:var(--text);}
+
+/* ── KPI strip ── */
+.kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:16px;margin-bottom:24px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 18px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:4px 0 0 4px;}
+.kpi.purple::before{background:var(--accent);}
+.kpi.pink::before{background:#6af7c8;}
+.kpi.green::before{background:#6af7c8;}
+.kpi.yellow::before{background:var(--accent4);}
+.kpi.blue::before{background:#6ab0f7;}
+.kpi.red::before{background:#e73a57;}
+.kpi-label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.kpi-value{font-size:2rem;font-weight:800;line-height:1;}
+.kpi-sub{font-size:.7rem;color:var(--muted);margin-top:6px;}
+.kpi.purple .kpi-value{color:var(--accent);}
+.kpi.pink .kpi-value{color:#6af7c8;}
+.kpi.green .kpi-value{color:#6af7c8;}
+.kpi.yellow .kpi-value{color:var(--accent4);}
+.kpi.blue .kpi-value{color:#6ab0f7;}
+.kpi.red .kpi-value{color:#e73a57;}
+
+/* ── Grid ── */
+.grid{display:grid;gap:20px;margin-bottom:20px;}
+.grid-2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr));}
+.grid-3{grid-template-columns:repeat(auto-fit,minmax(265px,1fr));}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;}
+.card h2{font-size:.82rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:18px;}
+.chart-wrap{position:relative;width:100%;}
+.chart-wrap.tall{height:280px;}
+.chart-wrap.med{height:240px;}
+
+/* ── NPS ── */
+.nps-block{display:flex;align-items:center;gap:32px;flex-wrap:wrap;}
+.nps-circle{width:120px;height:120px;border-radius:50%;background:conic-gradient(var(--accent3) 0% 99%,var(--border) 99%);display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;}
+.nps-circle::after{content:'';width:82px;height:82px;background:var(--card);border-radius:50%;position:absolute;}
+.nps-inner{position:absolute;z-index:1;text-align:center;}
+.nps-score{font-size:2rem;font-weight:800;color:#6af7c8;}
+.nps-label{font-size:.65rem;color:var(--muted);}
+.nps-dist{flex:1;display:flex;flex-direction:column;gap:8px;min-width:180px;}
+.nps-bar-row{display:flex;align-items:center;gap:10px;font-size:.78rem;}
+.nps-bar-row .score-lbl{width:24px;text-align:right;color:var(--muted);font-weight:600;}
+.nps-bar-bg{flex:1;background:var(--border);border-radius:4px;height:10px;overflow:hidden;}
+.nps-bar-fill{height:100%;border-radius:4px;transition:width .3s;}
+.nps-bar-count{width:32px;text-align:right;color:var(--muted);}
+
+/* ── Events table ── */
+.evt-table{width:100%;border-collapse:collapse;font-size:.8rem;}
+.evt-table th{color:var(--muted);text-align:left;padding:6px 10px;font-weight:600;text-transform:uppercase;font-size:.72rem;letter-spacing:.4px;border-bottom:1px solid var(--border);}
+.evt-table td{padding:9px 10px;border-bottom:1px solid var(--border);}
+.evt-table tr:last-child td{border-bottom:none;}
+.evt-table tr.hidden-row{display:none;}
+.pill{display:inline-block;padding:2px 9px;border-radius:12px;font-size:.7rem;font-weight:600;}
+.pill-sp{background:rgba(124,106,247,.2);color:var(--accent);}
+.pill-rj{background:rgba(247,106,140,.2);color:var(--accent2);}
+.pill-rs{background:rgba(106,247,200,.2);color:var(--accent3);}
+.pill-on{background:rgba(247,194,106,.2);color:var(--accent4);}
+.scroll-x{overflow-x:auto;}
+
+/* ── Qualitative ── */
+.tab-btn{background:var(--border);color:var(--muted);border:none;border-radius:8px;padding:8px 16px;font-size:.8rem;font-weight:600;cursor:pointer;transition:background .2s,color .2s;}
+.tab-btn.active,.tab-btn:hover{background:var(--accent);color:#fff;}
+.quotes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.quote-card{border-radius:10px;padding:14px 16px;border-left:4px solid transparent;}
+.quote-card.orange{background:rgba(247,151,106,.07);border-color:#f7976a;}
+.quote-card.green{background:rgba(106,247,200,.07);border-color:var(--accent3);}
+.quote-card.purple{background:rgba(124,106,247,.07);border-color:var(--accent);}
+.quote-wrapper.hidden-quote{display:none;}
+.no-quotes{color:var(--muted);font-size:.85rem;padding:20px 0;text-align:center;display:none;}
+.quote-meta{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+.qpill{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;}
+.qname{font-size:.78rem;font-weight:600;color:var(--text);}
+.quote-text{font-size:.82rem;color:#c8cad8;line-height:1.55;font-style:italic;}
+
+#enroll-strip .kpi{background:#f0eee8;border-color:#dedad4;}
+#enroll-strip .kpi-label{color:#463e3f;}
+#enroll-strip .kpi-sub{color:#463e3f;opacity:.65;}
+#enroll-strip .kpi.green .kpi-value{color:#0e8a5f;}
+#enroll-strip .kpi.green::before{background:#0e8a5f;}
+#enroll-strip .kpi.pink .kpi-value{color:#0e8a5f;}
+#enroll-strip .kpi.pink::before{background:#0e8a5f;}
+@media(max-width:600px){body{padding:14px;}.kpi-strip{grid-template-columns:1fr 1fr;}}
+
+/* ── Pós-Curso ── */
+.fu-section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:20px;}
+.fu-section h2{font-size:.82rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:18px;}
+.fu-kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
+.fu-kpi{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+.fu-kpi .kpi-label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+.fu-kpi .kpi-value{font-size:1.6rem;font-weight:800;line-height:1;}
+.fu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;}
+.fu-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.fu-card-title{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;}
+.fu-tags{display:flex;flex-wrap:wrap;gap:8px;}
+.fu-tag{border-radius:20px;padding:5px 12px;font-size:.78rem;font-weight:600;display:inline-flex;align-items:center;gap:6px;}
+.fu-tag-count{border-radius:10px;padding:1px 6px;font-size:.68rem;font-weight:700;}
+.fu-quote{border-radius:8px;padding:11px 14px;border-left:3px solid transparent;margin-bottom:8px;font-size:.8rem;line-height:1.5;font-style:italic;}
+.fu-quote-meta{font-size:.68rem;margin-top:5px;opacity:.6;font-style:normal;font-weight:600;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Dashboard | <span class="hl">Cursos</span></h1>
+    <div class="header-sub">
+      <strong>KAMI For Education • Toctus &amp; Balens • 2026</strong><br>
+      Período de análise: Março — Maio 2026
+    </div>
+  </div>
+  <span class="badge" style="background:rgba(0,0,0,.25);color:#f0eee8;">Atualizado: 12/05/2026</span>
+</header>
+
+<!-- Filter bar -->
+<div class="filter-bar">
+  <label>Filtros:</label>
+
+  <div class="fgroup" id="fgroup-estado">
+    <button class="fbtn" id="fbtn-estado" onclick="toggleDrop('estado')">
+      Estado <span class="fbadge" id="badge-estado" style="display:none">0</span> ▾
+    </button>
+    <div class="fdrop" id="fdrop-estado">
+      <label class="fdrop-item fdrop-todos"><input type="checkbox" data-group="estado" data-all="true"> Todos</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="estado" value="SP"> São Paulo</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="estado" value="RJ"> Rio de Janeiro</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="estado" value="RS"> Rio Grande do Sul</label>
+    </div>
+  </div>
+
+  <div class="fgroup" id="fgroup-mes">
+    <button class="fbtn" id="fbtn-mes" onclick="toggleDrop('mes')">
+      Mês <span class="fbadge" id="badge-mes" style="display:none">0</span> ▾
+    </button>
+    <div class="fdrop" id="fdrop-mes">
+      <label class="fdrop-item fdrop-todos"><input type="checkbox" data-group="mes" data-all="true"> Todos</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="mes" value="Março"> Março</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="mes" value="Abril"> Abril</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="mes" value="Maio"> Maio</label>
+    </div>
+  </div>
+
+  <div class="fgroup" id="fgroup-curso">
+    <button class="fbtn" id="fbtn-curso" onclick="toggleDrop('curso')">
+      Curso <span class="fbadge" id="badge-curso" style="display:none">0</span> ▾
+    </button>
+    <div class="fdrop" id="fdrop-curso">
+      <label class="fdrop-item fdrop-todos"><input type="checkbox" data-group="curso" data-all="true"> Todos</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="09/03 · SP"> 09/03 · São Paulo</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="16/03 · Online"> 16/03 · Online</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="23/03 · RJ — Adriano"> 23/03 · RJ — Adriano</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="23/03 · RS — Anderson"> 23/03 · RS — Anderson</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="23/03 · SP — Beto"> 23/03 · SP — Beto</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="30/03 · RJ — Michele Souza"> 30/03 · RJ — Michele Souza</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="30/03 · RS — Mariana Compagnoni"> 30/03 · RS — Mariana Compagnoni</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="30/03 · SP — Ana Paula Soares"> 30/03 · SP — Ana Paula Soares</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="27/04 · RJ — Virginia Nascimento"> 27/04 · RJ — Virginia Nascimento</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="27/04 · RS — Anderson Claro"> 27/04 · RS — Anderson Claro</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="27/04 · SP — Beto, Dani, Luiza e Paula"> 27/04 · SP — Beto, Dani, Luiza e Paula</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="04/05 · SP — Encontro Toctus c/ Hellen Anício"> 04/05 · SP — Encontro Toctus c/ Hellen Anício</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="11/05 · SP — Terapia Capilar c/ Ana Soares"> 11/05 · SP — Terapia Capilar c/ Ana Soares</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi"> 11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi</label>
+    </div>
+  </div>
+
+  <button class="btn-clear-all" onclick="clearAll()">✕ Limpar filtros</button>
+  <span id="filter-info"><strong id="fi-count">165</strong> respostas selecionadas</span>
+</div>
+
+<!-- Enrollment KPIs -->
+<div class="kpi-strip" id="enroll-strip" style="margin-bottom:20px">
+  <div class="kpi purple"><div class="kpi-label">Total Inscritos</div><div class="kpi-value" id="kpi-inscritos">180</div><div class="kpi-sub">nos eventos com dados de presença</div></div>
+  <div class="kpi green"><div class="kpi-label">Total Presentes</div><div class="kpi-value" id="kpi-presentes">105</div><div class="kpi-sub" id="kpi-presentes-sub">de 180 inscritos</div></div>
+  <div class="kpi pink"><div class="kpi-label">Taxa de Presença</div><div class="kpi-value" id="kpi-taxa">58%</div><div class="kpi-sub">do total inscrito</div></div>
+  <div class="kpi red"><div class="kpi-label">Total Faltaram</div><div class="kpi-value" id="kpi-faltaram">75</div><div class="kpi-sub" id="kpi-faltaram-sub">de 180 inscritos</div></div>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-strip">
+  <div class="kpi purple"><div class="kpi-label">Total de Respostas</div><div class="kpi-value" id="kpi-total">165</div><div class="kpi-sub" id="kpi-eventos-sub">14 eventos</div></div>
+  <div class="kpi green"><div class="kpi-label">NPS Médio</div><div class="kpi-value" id="kpi-nps">9.95</div><div class="kpi-sub">Escala 0–10</div></div>
+  <div class="kpi pink"><div class="kpi-label">Interesse em Novos Eventos</div><div class="kpi-value" id="kpi-interesse">97%</div><div class="kpi-sub" id="kpi-interesse-sub"></div></div>
+  <div class="kpi yellow"><div class="kpi-label">Já Participou Antes</div><div class="kpi-value" id="kpi-retorno">—</div><div class="kpi-sub" id="kpi-retorno-sub"></div></div>
+  <div class="kpi blue"><div class="kpi-label">Estados Atendidos</div><div class="kpi-value" id="kpi-estados">3</div><div class="kpi-sub">SP · RJ · RS</div></div>
+</div>
+
+<!-- Row 1 -->
+<div class="grid grid-2">
+  <div class="card">
+    <h2>Indicação do Curso (NPS)</h2>
+    <div class="nps-block">
+      <div class="nps-circle" id="nps-circle">
+        <div class="nps-inner"><div class="nps-score" id="nps-score">9.95</div><div class="nps-label">NPS</div></div>
+      </div>
+      <div class="nps-dist">
+        <div class="nps-bar-row"><span class="score-lbl">10</span><div class="nps-bar-bg"><div class="nps-bar-fill" id="nps-bar-10" style="width:93%;background:#6af7c8"></div></div><span class="nps-bar-count" id="nps-count-10">153</span></div>
+        <div class="nps-bar-row"><span class="score-lbl">9</span><div class="nps-bar-bg"><div class="nps-bar-fill" id="nps-bar-9" style="width:6%;background:var(--accent4)"></div></div><span class="nps-bar-count" id="nps-count-9">11</span></div>
+        <div class="nps-bar-row"><span class="score-lbl">8</span><div class="nps-bar-bg"><div class="nps-bar-fill" id="nps-bar-8" style="width:1%;background:#e73a57"></div></div><span class="nps-bar-count" id="nps-count-8">1</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Perfil Profissional</h2>
+    <div class="chart-wrap med"><canvas id="chartPerfil"></canvas></div>
+  </div>
+</div>
+
+<!-- Row 2 -->
+<div class="grid grid-3">
+  <div class="card"><h2>Participantes por Estado</h2><div class="chart-wrap med"><canvas id="chartEstado"></canvas></div></div>
+  <div class="card"><h2>Já Participou de Cursos Antes?</h2><div class="chart-wrap med"><canvas id="chartRetorno"></canvas></div></div>
+  <div class="card"><h2>Interesse em Novos Eventos?</h2><div class="chart-wrap med"><canvas id="chartInteresse"></canvas></div></div>
+</div>
+
+<!-- Row 3 -->
+<div class="card" style="margin-bottom:20px">
+  <h2>Participações por Evento</h2>
+  <div class="chart-wrap tall"><canvas id="chartEventos"></canvas></div>
+</div>
+
+<!-- Inscritos × Presença -->
+<div class="card" style="margin-bottom:20px" id="card-presenca">
+  <h2>Inscritos × Presentes × Faltaram <span style="font-size:.7rem;color:var(--accent4)">(4 eventos com dados de presença)</span></h2>
+  <div class="chart-wrap tall"><canvas id="chartPresenca"></canvas></div>
+  <p style="font-size:.72rem;color:var(--muted);margin-top:14px;text-align:center">* Dados de presença disponíveis para: 27/04 RJ (Virginia Nascimento), 27/04 RS (Anderson Claro), 27/04 SP (Beto, Dani, Luiza e Paula) e 04/05 SP (Encontro Toctus c/ Hellen Anício)</p>
+</div>
+
+<!-- Row 4 -->
+<div class="grid grid-2">
+  <div class="card"><h2>Nível com Terapia Capilar <span style="font-size:.7rem;color:var(--accent4)">(eventos mai/2026)</span></h2><div class="chart-wrap med"><canvas id="chartNivel"></canvas></div></div>
+  <div class="card"><h2>Respostas por Mês</h2><div class="chart-wrap med"><canvas id="chartMes"></canvas></div></div>
+</div>
+
+<!-- Events table -->
+<div class="card" style="margin-bottom:20px">
+  <h2>Detalhe por Evento</h2>
+  <div class="scroll-x">
+    <table class="evt-table">
+      <thead><tr><th>Data</th><th>Evento / Educador</th><th>Estado</th><th>Respostas</th><th>NPS Médio</th></tr></thead>
+      <tbody id="evt-tbody">
+        <tr data-estado="SP" data-mes="Março" data-curso="09/03 · SP"><td>09/03</td><td>São Paulo</td><td><span class="pill pill-sp">SP</span></td><td>8</td><td>10,0</td></tr>
+        <tr data-estado="SP" data-mes="Março" data-curso="16/03 · Online"><td>16/03</td><td>Online</td><td><span class="pill pill-on">Online</span></td><td>2</td><td>10,0</td></tr>
+        <tr data-estado="RJ" data-mes="Março" data-curso="23/03 · RJ — Adriano"><td>23/03</td><td>Rio de Janeiro — Adriano</td><td><span class="pill pill-rj">RJ</span></td><td>17</td><td>10,0</td></tr>
+        <tr data-estado="RS" data-mes="Março" data-curso="23/03 · RS — Anderson"><td>23/03</td><td>Rio Grande do Sul — Anderson</td><td><span class="pill pill-rs">RS</span></td><td>12</td><td>10,0</td></tr>
+        <tr data-estado="SP" data-mes="Março" data-curso="23/03 · SP — Beto"><td>23/03</td><td>São Paulo — Beto</td><td><span class="pill pill-sp">SP</span></td><td>16</td><td>10,0</td></tr>
+        <tr data-estado="RJ" data-mes="Março" data-curso="30/03 · RJ — Michele Souza"><td>30/03</td><td>Rio de Janeiro — Michele Souza</td><td><span class="pill pill-rj">RJ</span></td><td>19</td><td>9,9</td></tr>
+        <tr data-estado="RS" data-mes="Março" data-curso="30/03 · RS — Mariana Compagnoni"><td>30/03</td><td>Rio Grande do Sul — Mariana Compagnoni</td><td><span class="pill pill-rs">RS</span></td><td>6</td><td>10,0</td></tr>
+        <tr data-estado="SP" data-mes="Março" data-curso="30/03 · SP — Ana Paula Soares"><td>30/03</td><td>São Paulo — Ana Paula Soares</td><td><span class="pill pill-sp">SP</span></td><td>17</td><td>10,0</td></tr>
+        <tr data-estado="RJ" data-mes="Abril" data-curso="27/04 · RJ — Virginia Nascimento"><td>27/04</td><td>Rio de Janeiro — Virginia Nascimento</td><td><span class="pill pill-rj">RJ</span></td><td>3</td><td>9,3</td></tr>
+        <tr data-estado="RS" data-mes="Abril" data-curso="27/04 · RS — Anderson Claro"><td>27/04</td><td>Rio Grande do Sul — Anderson Claro</td><td><span class="pill pill-rs">RS</span></td><td>6</td><td>9,8</td></tr>
+        <tr data-estado="SP" data-mes="Abril" data-curso="27/04 · SP — Beto, Dani, Luiza e Paula"><td>27/04</td><td>São Paulo — Beto, Dani, Luiza e Paula</td><td><span class="pill pill-sp">SP</span></td><td>17</td><td>10,0</td></tr>
+        <tr data-estado="SP" data-mes="Maio" data-curso="04/05 · SP — Encontro Toctus c/ Hellen Anício"><td>04/05</td><td>São Paulo — Encontro Toctus c/ Hellen Anício</td><td><span class="pill pill-sp">SP</span></td><td>15</td><td>9,9</td></tr>
+        <tr data-estado="SP" data-mes="Maio" data-curso="11/05 · SP — Terapia Capilar c/ Ana Soares"><td>11/05</td><td>São Paulo — Terapia Capilar c/ Ana Soares</td><td><span class="pill pill-sp">SP</span></td><td>18</td><td>10,0</td></tr>
+        <tr data-estado="RJ" data-mes="Maio" data-curso="11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi"><td>11/05</td><td>Rio de Janeiro — Terapia Capilar c/ Gheuri Zangelmi</td><td><span class="pill pill-rj">RJ</span></td><td>9</td><td>9,9</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Qualitative -->
+<div class="card" style="margin-bottom:20px">
+  <h2>Principais Sugestões &amp; Destaques Qualitativos</h2>
+  <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+    <button class="tab-btn active" data-tab="sugestoes">💡 Sugestões de Melhoria</button>
+    <button class="tab-btn" data-tab="destaques">⭐ Destaques Positivos</button>
+    <button class="tab-btn" data-tab="equipe">🙌 Elogios à Equipe</button>
+  </div>
+
+  <!-- Sugestões -->
+  <div id="tab-sugestoes" class="tab-panel">
+    <div class="quotes-grid">
+      <div class="quote-wrapper" data-estado="SP" data-mes="Março" data-curso="09/03 · SP"><div class="quote-card orange"><div class="quote-meta"><span class="qpill pill-sp">09/03 · SP</span><span class="qname">Ed Carlos Venâncio</span></div><p class="quote-text">"O interessante é colocar junto a aula a tricoscopia para avaliar quais protocolos serão utilizados. Falar somente de produtos é legal e creio que a olho nu não dá para aplicar os produtos."</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Março" data-curso="09/03 · SP"><div class="quote-card orange"><div class="quote-meta"><span class="qpill pill-sp">09/03 · SP</span><span class="qname">Maria Luiza Bisi</span></div><p class="quote-text">"Seria interessante vocês criarem cursos de formação"</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Março" data-curso="16/03 · Online"><div class="quote-card orange"><div class="quote-meta"><span class="qpill pill-on">16/03 · Online</span><span class="qname">Juliana Cardoso Matheus</span></div><p class="quote-text">"Gostaria treinamento da linha aquadipharma"</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Março" data-curso="23/03 · SP — Beto"><div class="quote-card orange"><div class="quote-meta"><span class="qpill pill-sp">23/03 · SP — Beto</span><span class="qname">Rafael Valencio</span></div><p class="quote-text">"Mais brinde para os participantes conhecerem as novas marcas"</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Março" data-curso="23/03 · SP — Beto"><div class="quote-card orange"><div class="quote-meta"><span class="qpill pill-sp">23/03 · SP — Beto</span><span class="qname">Guilherme Santana</span></div><p class="quote-text">"Tudo impecável! Oque pode melhorar é realizar mais eventos como esse com mais frequência kk pois amei demais muito bom socializar com a galera da mesma área"</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Março" data-curso="23/03 · SP — Beto"><div class="quote-card orange"><div class="quote-meta"><span class="qpill pill-sp">23/03 · SP — Beto</span><span class="qname">Daniela Alves</span></div><p class="quote-text">"Acho que o tempo pode ser melhorado e mais reduzido, já que fiquei de apoio, senti falta de mais secadores de cabelo, o café no início da manhã não estava tão convidativo qdo o da tarde,"</p></div></div>
+      <div class="quote-wrapper" data-estado="RJ" data-mes="Março" data-curso="30/03 · RJ — Michele Souza"><div class="quote-card orange"><div class="quote-meta"><span class="qpill pill-rj">30/03 · RJ — Michele Souza</span><span class="qname">Erick Mendes Agustinho do Nascimento</span></div><p class="quote-text">"Maior foco em prática"</p></div></div>
+      <div class="quote-wrapper" data-estado="RJ" data-mes="Março" data-curso="30/03 · RJ — Michele Souza"><div class="quote-card orange"><div class="quote-meta"><span class="qpill pill-rj">30/03 · RJ — Michele Souza</span><span class="qname">Alexandrina Aparecida Mendes Santiago</span></div><p class="quote-text">"Carga horária e  muito  intensa"</p></div></div>
+      <div class="quote-wrapper" data-estado="RJ" data-mes="Março" data-curso="30/03 · RJ — Michele Souza"><div class="quote-card orange"><div class="quote-meta"><span class="qpill pill-rj">30/03 · RJ — Michele Souza</span><span class="qname">Val Martins</span></div><p class="quote-text">"Continua a vender produtos específicos que somente o profissional tem acesso"</p></div></div>
+      <div class="quote-wrapper" data-estado="RS" data-mes="Março" data-curso="30/03 · RS — Mariana Compagnoni"><div class="quote-card orange"><div class="quote-meta"><span class="qpill pill-rs">30/03 · RS — Mariana Compagnoni</span><span class="qname">Bianca Rosa Cherubini</span></div><p class="quote-text">"Mais modelos com cabelos com curvatura natural"</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Março" data-curso="30/03 · SP — Ana Paula Soares"><div class="quote-card orange"><div class="quote-meta"><span class="qpill pill-sp">30/03 · SP — Ana Paula Soares</span><span class="qname">Luciane Rodrigues</span></div><p class="quote-text">"Aprofunda mais sobre os óleos essenciais"</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Março" data-curso="30/03 · SP — Ana Paula Soares"><div class="quote-card orange"><div class="quote-meta"><span class="qpill pill-sp">30/03 · SP — Ana Paula Soares</span><span class="qname">Sandra Costa</span></div><p class="quote-text">"Mais tempo de curso"</p></div></div>
+      <div class="quote-wrapper" data-estado="RS" data-mes="Abril" data-curso="27/04 · RS — Anderson Claro"><div class="quote-card orange"><div class="quote-meta"><span class="qpill pill-rs">27/04 · RS — Anderson Claro</span><span class="qname">Ramon Arthur Kolling</span></div><p class="quote-text">"Quero mais cursos para conhecer melhor a marca"</p></div></div>
+    </div>
+    <p class="no-quotes" id="no-sugestoes">Nenhuma sugestão para os filtros selecionados.</p>
+  </div>
+
+  <!-- Destaques -->
+  <div id="tab-destaques" class="tab-panel" style="display:none">
+    <div class="quotes-grid">
+      <div class="quote-wrapper" data-estado="SP" data-mes="Março" data-curso="09/03 · SP"><div class="quote-card green"><div class="quote-meta"><span class="qpill pill-sp">09/03 · SP</span><span class="qname">Luciana Pardini</span></div><p class="quote-text">"Somente dizer que a promoção feita  os dias de curso, ajuda muito os proficionais comprarem uma quantidade maior de produtos, desta forma quem nao conhce a marca tem está oportunidade.  Muito obrigada"</p></div></div>
+      <div class="quote-wrapper" data-estado="RJ" data-mes="Março" data-curso="23/03 · RJ — Adriano"><div class="quote-card green"><div class="quote-meta"><span class="qpill pill-rj">23/03 · RJ — Adriano</span><span class="qname">Steven Rangel Campos</span></div><p class="quote-text">"Cada vez mais feliz com tudo que estão nos oferecendo e crescendo a cada dia !!! E se Deus quiser ainda serei convidado para fazer parte da equipe de vcs como artista pois estou apaixonado pelos produtos e usando sempre!!!!"</p></div></div>
+      <div class="quote-wrapper" data-estado="RS" data-mes="Março" data-curso="23/03 · RS — Anderson"><div class="quote-card green"><div class="quote-meta"><span class="qpill pill-rs">23/03 · RS — Anderson</span><span class="qname">Maria Luiza Raznievski</span></div><p class="quote-text">"Achei o curso perfeito, equipe muito acolhedora, me senti extremamente confortável para fazer tirar dúvidas e entender o conteúdo. Amei de verdade"</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Março" data-curso="23/03 · SP — Beto"><div class="quote-card green"><div class="quote-meta"><span class="qpill pill-sp">23/03 · SP — Beto</span><span class="qname">Sara Vitória</span></div><p class="quote-text">"Eu simplesmente amei, curso com técnicas inovadoras, explicações claras, uma perfeita recepção, lançamentos com preços e descontos inexplicáveis. Obrigada pela experiência, voltei sempre que puder!"</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Março" data-curso="23/03 · SP — Beto"><div class="quote-card green"><div class="quote-meta"><span class="qpill pill-sp">23/03 · SP — Beto</span><span class="qname">Tamires Martins</span></div><p class="quote-text">"Vou deixar um comentário positivo, sobre a recepção de todos os funcionários e vendedores..  muito maravilhoso, curso super completo… parabéns a equipe.."</p></div></div>
+      <div class="quote-wrapper" data-estado="RJ" data-mes="Março" data-curso="30/03 · RJ — Michele Souza"><div class="quote-card green"><div class="quote-meta"><span class="qpill pill-rj">30/03 · RJ — Michele Souza</span><span class="qname">Sandra Oliveira</span></div><p class="quote-text">"Simplesmente apaixonada por Toctus e pela Michele simplesmente maravilhosa !! Que dia agradável de muito conhecimento adquirido. !!!! Muito obrigada Toctus e Michele ❤️"</p></div></div>
+      <div class="quote-wrapper" data-estado="RJ" data-mes="Março" data-curso="30/03 · RJ — Michele Souza"><div class="quote-card green"><div class="quote-meta"><span class="qpill pill-rj">30/03 · RJ — Michele Souza</span><span class="qname">Renata Muniz</span></div><p class="quote-text">"Esse curso foi essencial para entendermos melhor sobre esse assunto que até o momento eu não havia me aprofundado por falta de informações,por não saber que era tão extenso e importante. Com certeza vou me aprofundar mais sobre"</p></div></div>
+      <div class="quote-wrapper" data-estado="RS" data-mes="Março" data-curso="30/03 · RS — Mariana Compagnoni"><div class="quote-card green"><div class="quote-meta"><span class="qpill pill-rs">30/03 · RS — Mariana Compagnoni</span><span class="qname">Erica Silveira Martins</span></div><p class="quote-text">"O curso foi ótimo, leve. A educadora não foi só apresentar um produto, ela.foi mostrar possibilidades, e a forma que abordou a doença da modelo, foi dee uma sensibilidade ímpar.   Parabéns!!"</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Março" data-curso="30/03 · SP — Ana Paula Soares"><div class="quote-card green"><div class="quote-meta"><span class="qpill pill-sp">30/03 · SP — Ana Paula Soares</span><span class="qname">Tatiane Lopes Guimarães</span></div><p class="quote-text">"O curso é muito completo, enriquecedor, incrível e a palestrante profissional Ana Paula Soares é uma DIVA MARAVILHOSA!!! Eu amei participar e com certeza participarei de outros. ❤️🥰"</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Março" data-curso="30/03 · SP — Ana Paula Soares"><div class="quote-card green"><div class="quote-meta"><span class="qpill pill-sp">30/03 · SP — Ana Paula Soares</span><span class="qname">Taiane Lopes Guimarães</span></div><p class="quote-text">"Vim acompanhar a minha mãe e estamos saindo daqui muito feliz com todo conhecimento adquirido. Amei participar do curso, a professora é uma pessoa maravilhosa, uma diva!!!"</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Abril" data-curso="27/04 · SP — Beto, Dani, Luiza e Paula"><div class="quote-card green"><div class="quote-meta"><span class="qpill pill-sp">27/04 · SP — Beto, Dani, Luiza e Paula</span><span class="qname">Gabriela Batista do Nascimento</span></div><p class="quote-text">"Somente elogios, profissionais maravilhosos com muitas técnicas que está em alta e várias dicas para o dia a dia útil,"</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Maio" data-curso="04/05 · SP — Encontro Toctus c/ Hellen Anício"><div class="quote-card green"><div class="quote-meta"><span class="qpill pill-sp">04/05 · SP — Encontro Toctus c/ Hellen Anício</span><span class="qname">Andreia Lopes</span></div><p class="quote-text">"O curso foi muito explicativo, ambiente aconchegante e produtos maravilhosos!"</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Maio" data-curso="04/05 · SP — Encontro Toctus c/ Hellen Anício"><div class="quote-card green"><div class="quote-meta"><span class="qpill pill-sp">04/05 · SP — Encontro Toctus c/ Hellen Anício</span><span class="qname">Adriana Costa Amorim Bezerra</span></div><p class="quote-text">"Eu amei todo o conteúdo e o acolhimento recebido. Obrigada !"</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Maio" data-curso="04/05 · SP — Encontro Toctus c/ Hellen Anício"><div class="quote-card green"><div class="quote-meta"><span class="qpill pill-sp">04/05 · SP — Encontro Toctus c/ Hellen Anício</span><span class="qname">Eloisa Oliveira do Nascimento</span></div><p class="quote-text">"Não, o curso foi simplesmente maravilhoso. Ana Soares super simpatia e receptiva! Hellen Anincio é uma ótima educadora, explica super bem e não deixa dúvidas."</p></div></div>
+    </div>
+    <p class="no-quotes" id="no-destaques">Nenhum destaque para os filtros selecionados.</p>
+  </div>
+
+  <!-- Elogios -->
+  <div id="tab-equipe" class="tab-panel" style="display:none">
+    <div class="quotes-grid">
+      <div class="quote-wrapper" data-estado="RS" data-mes="Março" data-curso="23/03 · RS — Anderson"><div class="quote-card purple"><div class="quote-meta"><span class="qpill pill-rs">23/03 · RS — Anderson</span><span class="qname">Joseane Ferreira da Silva</span></div><p class="quote-text">"Eu acompanho o trabalho do Talent Anderson há anos e Admiro o trabalho dele e como consumidora da marca estou bem satisfeita com a performance dos produtos."</p></div></div>
+      <div class="quote-wrapper" data-estado="RS" data-mes="Março" data-curso="23/03 · RS — Anderson"><div class="quote-card purple"><div class="quote-meta"><span class="qpill pill-rs">23/03 · RS — Anderson</span><span class="qname">Luís Henrique Sebastião</span></div><p class="quote-text">"Acho a organização do evento sempre impecável, rose sempre muito solicita e a Mari transbordando conhecimento! Anderson excelente profissional"</p></div></div>
+      <div class="quote-wrapper" data-estado="RJ" data-mes="Março" data-curso="30/03 · RJ — Michele Souza"><div class="quote-card purple"><div class="quote-meta"><span class="qpill pill-rj">30/03 · RJ — Michele Souza</span><span class="qname">Martha Marcos</span></div><p class="quote-text">"Bem esclarecedor gostei muito e indicarei!! Quando tiver outro gostaria de participar!!!"</p></div></div>
+      <div class="quote-wrapper" data-estado="RS" data-mes="Março" data-curso="30/03 · RS — Mariana Compagnoni"><div class="quote-card purple"><div class="quote-meta"><span class="qpill pill-rs">30/03 · RS — Mariana Compagnoni</span><span class="qname">Lanna Bronauth</span></div><p class="quote-text">"A Mari é excelente, muito rica em conhecimento. Fico feliz de participar de um workshop que tenha tamanha profundidade."</p></div></div>
+      <div class="quote-wrapper" data-estado="RS" data-mes="Março" data-curso="30/03 · RS — Mariana Compagnoni"><div class="quote-card purple"><div class="quote-meta"><span class="qpill pill-rs">30/03 · RS — Mariana Compagnoni</span><span class="qname">Luís Henrique Sebastião</span></div><p class="quote-text">"Mari é incrível e sempre transbordando conhecimento, a Rosmary sempre pronta para atender nossas necessidades sempre com muita dedicação e agilidade"</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Março" data-curso="30/03 · SP — Ana Paula Soares"><div class="quote-card purple"><div class="quote-meta"><span class="qpill pill-sp">30/03 · SP — Ana Paula Soares</span><span class="qname">Daniela Alves</span></div><p class="quote-text">"Gostei bastante das informações e dicas durante o curso! Sempre aprendendo um pouco mais!"</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Maio" data-curso="11/05 · SP — Terapia Capilar c/ Ana Soares"><div class="quote-card purple"><div class="quote-meta"><span class="qpill pill-sp">11/05 · SP — Terapia Capilar c/ Ana Soares</span><span class="qname">Natanieli Santos Ferreira</span></div><p class="quote-text">"A Ana soares é maravilhosa."</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Maio" data-curso="11/05 · SP — Terapia Capilar c/ Ana Soares"><div class="quote-card purple"><div class="quote-meta"><span class="qpill pill-sp">11/05 · SP — Terapia Capilar c/ Ana Soares</span><span class="qname">Ivanilda Leite da Silva de Castilho</span></div><p class="quote-text">"A Ana é maravilhosa, o curso fica leve."</p></div></div>
+      <div class="quote-wrapper" data-estado="SP" data-mes="Maio" data-curso="11/05 · SP — Terapia Capilar c/ Ana Soares"><div class="quote-card purple"><div class="quote-meta"><span class="qpill pill-sp">11/05 · SP — Terapia Capilar c/ Ana Soares</span><span class="qname">Danilo do Nascimento</span></div><p class="quote-text">"Amei, a Ana é top."</p></div></div>
+    </div>
+    <p class="no-quotes" id="no-equipe">Nenhum elogio para os filtros selecionados.</p>
+  </div>
+</div>
+
+<!-- ─── PESQUISA PÓS-CURSO ─── -->
+<div class="fu-section">
+  <h2>Pesquisa Pós-Curso — Quem Não Foi &amp; Quem Foi</h2>
+
+  <!-- KPIs -->
+  <div class="fu-kpi-row">
+    <div class="fu-kpi">
+      <div class="kpi-label">Respondentes (faltaram)</div>
+      <div class="kpi-value" id="fu-nao-resp" style="color:var(--accent)">—</div>
+    </div>
+    <div class="fu-kpi">
+      <div class="kpi-label">Querem retornar</div>
+      <div class="kpi-value" id="fu-retorno" style="color:#6af7c8">—</div>
+    </div>
+    <div class="fu-kpi">
+      <div class="kpi-label">Respondentes (foram)</div>
+      <div class="kpi-value" id="fu-comp-resp" style="color:var(--accent)">—</div>
+    </div>
+    <div class="fu-kpi">
+      <div class="kpi-label">Conseguiram aplicar</div>
+      <div class="kpi-value" id="fu-aplicou-pct" style="color:#6af7c8">—</div>
+    </div>
+  </div>
+
+  <!-- Cards grid -->
+  <div class="fu-grid">
+    <!-- Motivos de ausência -->
+    <div class="fu-card">
+      <div class="fu-card-title">Motivos de ausência</div>
+      <div id="fu-motivos"></div>
+      <p id="fu-motivos-empty" style="font-size:.78rem;color:var(--muted);display:none">Sem respostas para exibir.</p>
+    </div>
+
+    <!-- Interesse em retornar -->
+    <div class="fu-card">
+      <div class="fu-card-title">Interesse em participar novamente</div>
+      <div id="fu-retorno-vis" style="margin-bottom:12px"></div>
+      <div class="fu-tags" id="fu-retorno-tags"></div>
+      <p id="fu-retorno-empty" style="font-size:.78rem;color:var(--muted);display:none">Sem respostas para exibir.</p>
+    </div>
+
+    <!-- Dores do salão -->
+    <div class="fu-card">
+      <div class="fu-card-title">Principais dores do salão</div>
+      <div class="fu-tags" id="fu-dores"></div>
+      <div id="fu-dores-quotes" style="margin-top:10px"></div>
+      <p id="fu-dores-empty" style="font-size:.78rem;color:var(--muted);display:none">Sem respostas para exibir.</p>
+    </div>
+
+    <!-- Interesse em evoluir -->
+    <div class="fu-card">
+      <div class="fu-card-title">Áreas de interesse em evoluir</div>
+      <div class="fu-tags" id="fu-evoluir"></div>
+      <div id="fu-evoluir-quotes" style="margin-top:10px"></div>
+      <p id="fu-evoluir-empty" style="font-size:.78rem;color:var(--muted);display:none">Sem respostas para exibir.</p>
+    </div>
+
+    <!-- Conseguiu aplicar -->
+    <div class="fu-card" style="grid-column:1/-1">
+      <div class="fu-card-title">O que conseguiu aplicar (quem foi ao curso)</div>
+      <div id="fu-aplicou-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-top:4px"></div>
+      <p id="fu-aplicou-empty" style="font-size:.78rem;color:var(--muted);display:none">Sem respostas para exibir.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────
+const ALL = [
+  // 09/03 SP
+  {e:'SP',m:'Março',c:'09/03 · SP',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'09/03 · SP',p:'Terapeuta Capilar',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'09/03 · SP',p:'Terapeuta Capilar',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'09/03 · SP',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'09/03 · SP',p:'Terapeuta Capilar',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'09/03 · SP',p:'Dono de Salão',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'09/03 · SP',p:'Outros',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'09/03 · SP',p:'Terapeuta Capilar',nps:10,ret:'Não',int:'Sim',niv:''},
+  // 16/03 Online
+  {e:'SP',m:'Março',c:'16/03 · Online',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'16/03 · Online',p:'Outros',nps:10,ret:'Sim',int:'Sim',niv:''},
+  // 23/03 RJ Adriano
+  {e:'RJ',m:'Março',c:'23/03 · RJ — Adriano',p:'Auxiliar',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'23/03 · RJ — Adriano',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'23/03 · RJ — Adriano',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'23/03 · RJ — Adriano',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'23/03 · RJ — Adriano',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'23/03 · RJ — Adriano',p:'Dono de Salão',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'23/03 · RJ — Adriano',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'23/03 · RJ — Adriano',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'23/03 · RJ — Adriano',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'23/03 · RJ — Adriano',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'23/03 · RJ — Adriano',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'23/03 · RJ — Adriano',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'23/03 · RJ — Adriano',p:'Terapeuta Capilar',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'23/03 · RJ — Adriano',p:'Auxiliar',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'23/03 · RJ — Adriano',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'23/03 · RJ — Adriano',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'23/03 · RJ — Adriano',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  // 23/03 RS Anderson
+  {e:'RS',m:'Março',c:'23/03 · RS — Anderson',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RS',m:'Março',c:'23/03 · RS — Anderson',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RS',m:'Março',c:'23/03 · RS — Anderson',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RS',m:'Março',c:'23/03 · RS — Anderson',p:'Outros',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RS',m:'Março',c:'23/03 · RS — Anderson',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RS',m:'Março',c:'23/03 · RS — Anderson',p:'Auxiliar',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RS',m:'Março',c:'23/03 · RS — Anderson',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RS',m:'Março',c:'23/03 · RS — Anderson',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RS',m:'Março',c:'23/03 · RS — Anderson',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RS',m:'Março',c:'23/03 · RS — Anderson',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RS',m:'Março',c:'23/03 · RS — Anderson',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RS',m:'Março',c:'23/03 · RS — Anderson',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  // 23/03 SP Beto
+  {e:'SP',m:'Março',c:'23/03 · SP — Beto',p:'Terapeuta Capilar',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'23/03 · SP — Beto',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'23/03 · SP — Beto',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'23/03 · SP — Beto',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'23/03 · SP — Beto',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'23/03 · SP — Beto',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'23/03 · SP — Beto',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'23/03 · SP — Beto',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'23/03 · SP — Beto',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'23/03 · SP — Beto',p:'Dono de Salão',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'23/03 · SP — Beto',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'23/03 · SP — Beto',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'23/03 · SP — Beto',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'23/03 · SP — Beto',p:'Dono de Salão',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'23/03 · SP — Beto',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'23/03 · SP — Beto',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  // 30/03 RJ Michele
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Outros',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Terapeuta Capilar',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Dono de Salão',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Terapeuta Capilar',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Auxiliar',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Dono de Salão',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Auxiliar',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Terapeuta Capilar',nps:9,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RJ',m:'Março',c:'30/03 · RJ — Michele Souza',p:'Terapeuta Capilar',nps:10,ret:'Não',int:'Sim',niv:''},
+  // 30/03 RS Mariana
+  {e:'RS',m:'Março',c:'30/03 · RS — Mariana Compagnoni',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RS',m:'Março',c:'30/03 · RS — Mariana Compagnoni',p:'Auxiliar',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RS',m:'Março',c:'30/03 · RS — Mariana Compagnoni',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RS',m:'Março',c:'30/03 · RS — Mariana Compagnoni',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RS',m:'Março',c:'30/03 · RS — Mariana Compagnoni',p:'Outros',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RS',m:'Março',c:'30/03 · RS — Mariana Compagnoni',p:'Auxiliar',nps:10,ret:'Sim',int:'Sim',niv:''},
+  // 30/03 SP Ana Paula
+  {e:'SP',m:'Março',c:'30/03 · SP — Ana Paula Soares',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'30/03 · SP — Ana Paula Soares',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'30/03 · SP — Ana Paula Soares',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'30/03 · SP — Ana Paula Soares',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'30/03 · SP — Ana Paula Soares',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'30/03 · SP — Ana Paula Soares',p:'Dono de Salão',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'30/03 · SP — Ana Paula Soares',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'30/03 · SP — Ana Paula Soares',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'30/03 · SP — Ana Paula Soares',p:'Dono de Salão',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'30/03 · SP — Ana Paula Soares',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'30/03 · SP — Ana Paula Soares',p:'Dono de Salão',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'30/03 · SP — Ana Paula Soares',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'30/03 · SP — Ana Paula Soares',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'30/03 · SP — Ana Paula Soares',p:'Terapeuta Capilar',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'30/03 · SP — Ana Paula Soares',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'30/03 · SP — Ana Paula Soares',p:'Outros',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Março',c:'30/03 · SP — Ana Paula Soares',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  // 27/04 RJ Virginia
+  {e:'RJ',m:'Abril',c:'27/04 · RJ — Virginia Nascimento',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Abril',c:'27/04 · RJ — Virginia Nascimento',p:'Cabeleireiro',nps:8,ret:'Sim',int:'Sim',niv:''},
+  {e:'RJ',m:'Abril',c:'27/04 · RJ — Virginia Nascimento',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  // 27/04 RS Anderson Claro
+  {e:'RS',m:'Abril',c:'27/04 · RS — Anderson Claro',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RS',m:'Abril',c:'27/04 · RS — Anderson Claro',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RS',m:'Abril',c:'27/04 · RS — Anderson Claro',p:'Dono de Salão e Cabeleireiro',nps:9,ret:'Não',int:'Prefiro não opinar',niv:''},
+  {e:'RS',m:'Abril',c:'27/04 · RS — Anderson Claro',p:'Terapeuta Capilar',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RS',m:'Abril',c:'27/04 · RS — Anderson Claro',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'RS',m:'Abril',c:'27/04 · RS — Anderson Claro',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  // 27/04 SP Beto+
+  {e:'SP',m:'Abril',c:'27/04 · SP — Beto, Dani, Luiza e Paula',p:'Auxiliar',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Abril',c:'27/04 · SP — Beto, Dani, Luiza e Paula',p:'Dono de Salão',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Abril',c:'27/04 · SP — Beto, Dani, Luiza e Paula',p:'Dono de Salão',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Abril',c:'27/04 · SP — Beto, Dani, Luiza e Paula',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Abril',c:'27/04 · SP — Beto, Dani, Luiza e Paula',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Abril',c:'27/04 · SP — Beto, Dani, Luiza e Paula',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Abril',c:'27/04 · SP — Beto, Dani, Luiza e Paula',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Abril',c:'27/04 · SP — Beto, Dani, Luiza e Paula',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Abril',c:'27/04 · SP — Beto, Dani, Luiza e Paula',p:'Dono de Salão',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Abril',c:'27/04 · SP — Beto, Dani, Luiza e Paula',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Abril',c:'27/04 · SP — Beto, Dani, Luiza e Paula',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Abril',c:'27/04 · SP — Beto, Dani, Luiza e Paula',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Abril',c:'27/04 · SP — Beto, Dani, Luiza e Paula',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Abril',c:'27/04 · SP — Beto, Dani, Luiza e Paula',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:''},
+  {e:'SP',m:'Abril',c:'27/04 · SP — Beto, Dani, Luiza e Paula',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Abril',c:'27/04 · SP — Beto, Dani, Luiza e Paula',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  {e:'SP',m:'Abril',c:'27/04 · SP — Beto, Dani, Luiza e Paula',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+  // 04/05 SP Encontro
+  {e:'SP',m:'Maio',c:'04/05 · SP — Encontro Toctus c/ Hellen Anício',p:'Terapeuta Capilar',nps:10,ret:'Sim',int:'Sim',niv:'Formado'},
+  {e:'SP',m:'Maio',c:'04/05 · SP — Encontro Toctus c/ Hellen Anício',p:'Terapeuta Capilar',nps:10,ret:'Sim',int:'Sim',niv:'Iniciante'},
+  {e:'SP',m:'Maio',c:'04/05 · SP — Encontro Toctus c/ Hellen Anício',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:'Iniciante'},
+  {e:'SP',m:'Maio',c:'04/05 · SP — Encontro Toctus c/ Hellen Anício',p:'Terapeuta Capilar',nps:10,ret:'Não',int:'Sim',niv:'Avançado'},
+  {e:'SP',m:'Maio',c:'04/05 · SP — Encontro Toctus c/ Hellen Anício',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:'Intermediario'},
+  {e:'SP',m:'Maio',c:'04/05 · SP — Encontro Toctus c/ Hellen Anício',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:'Iniciante'},
+  {e:'SP',m:'Maio',c:'04/05 · SP — Encontro Toctus c/ Hellen Anício',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:'Iniciante'},
+  {e:'SP',m:'Maio',c:'04/05 · SP — Encontro Toctus c/ Hellen Anício',p:'Auxiliar',nps:9,ret:'Não',int:'Sim',niv:'Iniciante'},
+  {e:'SP',m:'Maio',c:'04/05 · SP — Encontro Toctus c/ Hellen Anício',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:'Iniciante'},
+  {e:'SP',m:'Maio',c:'04/05 · SP — Encontro Toctus c/ Hellen Anício',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:'Avançado'},
+  {e:'SP',m:'Maio',c:'04/05 · SP — Encontro Toctus c/ Hellen Anício',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:'Iniciante'},
+  {e:'SP',m:'Maio',c:'04/05 · SP — Encontro Toctus c/ Hellen Anício',p:'Terapeuta Capilar',nps:10,ret:'Sim',int:'Sim',niv:'Formado'},
+  {e:'SP',m:'Maio',c:'04/05 · SP — Encontro Toctus c/ Hellen Anício',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:'Iniciante'},
+  {e:'SP',m:'Maio',c:'04/05 · SP — Encontro Toctus c/ Hellen Anício',p:'Terapeuta Capilar',nps:10,ret:'Não',int:'Sim',niv:'Formado'},
+  {e:'SP',m:'Maio',c:'04/05 · SP — Encontro Toctus c/ Hellen Anício',p:'Terapeuta Capilar',nps:10,ret:'Sim',int:'Sim',niv:'Avançado'},
+  // 11/05 SP Ana Soares
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:'Formado'},
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:'Intermediario'},
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:'Intermediario'},
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:'Iniciante'},
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Auxiliar',nps:10,ret:'Não',int:'Sim',niv:'Iniciante'},
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:'Iniciante'},
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Dono de Salão',nps:10,ret:'Não',int:'Sim',niv:'Iniciante'},
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Dono de Salão',nps:10,ret:'Não',int:'Sim',niv:'Formado'},
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:'Intermediario'},
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:'Intermediario'},
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Auxiliar',nps:10,ret:'Não',int:'Sim',niv:'Iniciante'},
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:'Formado'},
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:'Intermediario'},
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Auxiliar',nps:10,ret:'Não',int:'Sim',niv:'Iniciante'},
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:'Iniciante'},
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Auxiliar',nps:10,ret:'Sim',int:'Sim',niv:'Intermediario'},
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Dono de Salão',nps:10,ret:'Não',int:'Sim',niv:'Iniciante'},
+  {e:'SP',m:'Maio',c:'11/05 · SP — Terapia Capilar c/ Ana Soares',p:'Dono de Salão',nps:10,ret:'Sim',int:'Sim',niv:'Iniciante'},
+  // 11/05 RJ Gheuri
+  {e:'RJ',m:'Maio',c:'11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi',p:'Dono de Salão e Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:'Iniciante'},
+  {e:'RJ',m:'Maio',c:'11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi',p:'Cabeleireiro',nps:9,ret:'Sim',int:'Sim',niv:'Iniciante'},
+  {e:'RJ',m:'Maio',c:'11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi',p:'Terapeuta Capilar',nps:10,ret:'Sim',int:'Sim',niv:'Formado'},
+  {e:'RJ',m:'Maio',c:'11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:'Iniciante'},
+  {e:'RJ',m:'Maio',c:'11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:'Iniciante'},
+  {e:'RJ',m:'Maio',c:'11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi',p:'Cabeleireiro',nps:10,ret:'Não',int:'Sim',niv:'Iniciante'},
+  {e:'RJ',m:'Maio',c:'11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi',p:'Dono de Salão',nps:10,ret:'Sim',int:'Sim',niv:'Iniciante'},
+  {e:'RJ',m:'Maio',c:'11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi',p:'Outros',nps:10,ret:'Não',int:'Prefiro não opinar',niv:'Nenum conhecimento'},
+  {e:'RJ',m:'Maio',c:'11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi',p:'Cabeleireiro',nps:10,ret:'Sim',int:'Sim',niv:''},
+];
+
+const CURSOS_ORDER = [
+  '09/03 · SP','16/03 · Online',
+  '23/03 · RJ — Adriano','23/03 · RS — Anderson','23/03 · SP — Beto',
+  '30/03 · RJ — Michele Souza','30/03 · RS — Mariana Compagnoni','30/03 · SP — Ana Paula Soares',
+  '27/04 · RJ — Virginia Nascimento','27/04 · RS — Anderson Claro','27/04 · SP — Beto, Dani, Luiza e Paula',
+  '04/05 · SP — Encontro Toctus c/ Hellen Anício',
+  '11/05 · SP — Terapia Capilar c/ Ana Soares','11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi'
+];
+const CURSOS_LABELS = [
+  '09/03 SP','16/03 Online','23/03 RJ-Adriano','23/03 RS-Anderson','23/03 SP-Beto',
+  '30/03 RJ-Michele','30/03 RS-Mariana','30/03 SP-AnaPaula',
+  '27/04 RJ-Virginia','27/04 RS-Anderson','27/04 SP-Beto+',
+  '04/05 SP-Encontro','11/05 SP-AnaSoares','11/05 RJ-Gheuri'
+];
+const CURSOS_COLORS = [
+  '#7c6af7','#f7c26a','#f76a8c','#6af7c8','#7c6af7',
+  '#f76a8c','#6af7c8','#7c6af7',
+  '#f76a8c','#6af7c8','#7c6af7',
+  '#6ab0f7','#7c6af7','#f76a8c'
+];
+
+const ENROLLMENT = [
+  {c:'27/04 · RJ — Virginia Nascimento',             e:'RJ', m:'Abril', lbl:'27/04 RJ — Virginia',  inscritos:24, presentes:12, faltaram:12},
+  {c:'27/04 · RS — Anderson Claro',                   e:'RS', m:'Abril', lbl:'27/04 RS — Anderson',  inscritos:17, presentes:8,  faltaram:9},
+  {c:'27/04 · SP — Beto, Dani, Luiza e Paula',        e:'SP', m:'Abril', lbl:'27/04 SP — Beto+',     inscritos:30, presentes:16, faltaram:14},
+  {c:'04/05 · SP — Encontro Toctus c/ Hellen Anício', e:'SP', m:'Maio',  lbl:'04/05 SP — Encontro',  inscritos:29, presentes:17, faltaram:12},
+  {c:'11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi',      e:'RJ', m:'Maio',  lbl:'11/05 RJ — Gheuri',    inscritos:37, presentes:27, faltaram:10},
+  {c:'11/05 · SP — Terapia Capilar c/ Ana Soares',           e:'SP', m:'Maio',  lbl:'11/05 SP — Protocol&Profit', inscritos:43, presentes:25, faltaram:18},
+];
+
+// ─────────────────────────────────────────────
+// PÓS-CURSO — pesquisa com quem não foi e quem foi
+// p: false = não compareceu | true = compareceu
+// ─────────────────────────────────────────────
+const FOLLOWUP = [
+];
+
+// ─────────────────────────────────────────────
+// FILTER STATE
+// ─────────────────────────────────────────────
+const F = {estado:new Set(), mes:new Set(), curso:new Set()};
+
+function getFiltered(){
+  return ALL.filter(r=>
+    (!F.estado.size||F.estado.has(r.e))&&
+    (!F.mes.size||F.mes.has(r.m))&&
+    (!F.curso.size||F.curso.has(r.c))
+  );
+}
+
+// ─────────────────────────────────────────────
+// DROPDOWN LOGIC
+// ─────────────────────────────────────────────
+function toggleDrop(key){
+  const drop=document.getElementById('fdrop-'+key);
+  const btn=document.getElementById('fbtn-'+key);
+  const isOpen=drop.classList.contains('open');
+  document.querySelectorAll('.fdrop').forEach(d=>d.classList.remove('open'));
+  document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('open'));
+  if(!isOpen){drop.classList.add('open');btn.classList.add('open');}
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.fgroup'))
+    document.querySelectorAll('.fdrop').forEach(d=>d.classList.remove('open'));
+});
+
+function fkey(g){ return g==='estado'?'estado':g==='mes'?'mes':'curso'; }
+
+function syncTodos(g){
+  const all=document.querySelector(`input[data-group="${g}"][data-all]`);
+  if(!all) return;
+  const items=[...document.querySelectorAll(`input[data-group="${g}"]:not([data-all])`)];
+  const checkedCount=items.filter(s=>s.checked).length;
+  all.checked=checkedCount===items.length;
+  all.indeterminate=checkedCount>0&&checkedCount<items.length;
+}
+
+document.querySelectorAll('input[data-group]').forEach(cb=>{
+  cb.addEventListener('change',()=>{
+    const g=cb.dataset.group;
+    const k=fkey(g);
+    if(cb.dataset.all){
+      const items=[...document.querySelectorAll(`input[data-group="${g}"]:not([data-all])`)];
+      items.forEach(s=>{ s.checked=cb.checked; cb.checked?F[k].add(s.value):F[k].delete(s.value); });
+    } else {
+      cb.checked?F[k].add(cb.value):F[k].delete(cb.value);
+      syncTodos(g);
+    }
+    updateBadge(g,k);
+    updateAll();
+  });
+});
+
+function updateBadge(g,k){
+  const badge=document.getElementById('badge-'+g);
+  const btn=document.getElementById('fbtn-'+g);
+  const n=F[k].size;
+  badge.textContent=n;
+  badge.style.display=n?'inline-block':'none';
+  btn.classList.toggle('has-sel',n>0);
+}
+
+function clearAll(){
+  F.estado.clear();F.mes.clear();F.curso.clear();
+  document.querySelectorAll('input[data-group]').forEach(cb=>{ cb.checked=false; cb.indeterminate=false; });
+  ['estado','mes','curso'].forEach(g=>{
+    document.getElementById('badge-'+g).style.display='none';
+    document.getElementById('fbtn-'+g).classList.remove('has-sel');
+  });
+  updateAll();
+}
+
+// ─────────────────────────────────────────────
+// CHARTS
+// ─────────────────────────────────────────────
+Chart.defaults.color='#c4b8b9';
+const C={};
+
+function mkChart(id,type,labels,data,colors,opts){
+  const ctx=document.getElementById(id).getContext('2d');
+  return new Chart(ctx,{type,data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:0,hoverOffset:6,borderRadius:type==='bar'?6:0,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,...opts}});
+}
+
+const donutOpts=(pos)=>({cutout:'62%',plugins:{legend:{position:pos,labels:{color:'#c4b8b9',font:{size:11},boxWidth:10,padding:10}},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw} (${ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0)?Math.round(ctx.raw/ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0)*100):0}%)`}}}});
+
+C.perfil=mkChart('chartPerfil','doughnut',
+  ['Cabeleireiro','Dono Salão + Cab.','Dono de Salão','Terapeuta Capilar','Auxiliar','Outros'],
+  [0,0,0,0,0,0],
+  ['#7c6af7','#f76a8c','#6ab0f7','#6af7c8','#f7c26a','#f7976a'],
+  donutOpts('right')
+);
+C.estado=mkChart('chartEstado','doughnut',
+  ['São Paulo','Rio de Janeiro','Rio Grande do Sul'],
+  [0,0,0],['#7c6af7','#f76a8c','#6af7c8'],donutOpts('bottom')
+);
+C.retorno=mkChart('chartRetorno','doughnut',
+  ['1ª participação','Já participou antes'],
+  [0,0],['#6ab0f7','#f7c26a'],donutOpts('bottom')
+);
+C.interesse=mkChart('chartInteresse','doughnut',
+  ['Sim','Prefiro não opinar','Não'],
+  [0,0,0],['#6af7c8','#f7c26a','#f76a8c'],donutOpts('bottom')
+);
+C.eventos=new Chart(document.getElementById('chartEventos').getContext('2d'),{
+  type:'bar',
+  data:{labels:CURSOS_LABELS,datasets:[{data:new Array(14).fill(0),backgroundColor:CURSOS_COLORS,borderRadius:6,borderSkipped:false,borderWidth:0}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw} respostas`}}},scales:{x:{ticks:{color:'#c4b8b9',font:{size:10}},grid:{color:'#5c5254'}},y:{ticks:{color:'#c4b8b9',stepSize:5},grid:{color:'#5c5254'},beginAtZero:true}}}
+});
+C.nivel=new Chart(document.getElementById('chartNivel').getContext('2d'),{
+  type:'bar',
+  data:{labels:['Iniciante','Intermediário','Formado','Avançado','Nenhum'],datasets:[{data:[0,0,0,0,0],backgroundColor:['#7c6af7','#6ab0f7','#6af7c8','#f7c26a','#f76a8c'],borderRadius:6,borderSkipped:false,borderWidth:0}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw} participantes`}}},scales:{x:{ticks:{color:'#c4b8b9'},grid:{color:'#5c5254'}},y:{ticks:{color:'#c4b8b9',stepSize:2},grid:{color:'#5c5254'},beginAtZero:true}}}
+});
+C.mes=new Chart(document.getElementById('chartMes').getContext('2d'),{
+  type:'line',
+  data:{labels:['Março','Abril','Maio'],datasets:[{data:[0,0,0],borderColor:'#7c6af7',backgroundColor:'rgba(124,106,247,.15)',tension:.4,fill:true,pointBackgroundColor:'#7c6af7',pointRadius:5,pointHoverRadius:7,borderWidth:2}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw} respostas`}}},scales:{x:{ticks:{color:'#c4b8b9'},grid:{color:'#5c5254'}},y:{ticks:{color:'#c4b8b9',stepSize:20},grid:{color:'#5c5254'},beginAtZero:true}}}
+});
+C.presenca=new Chart(document.getElementById('chartPresenca').getContext('2d'),{
+  type:'bar',
+  data:{
+    labels:ENROLLMENT.map(r=>r.lbl),
+    datasets:[
+      {label:'Inscritos',data:ENROLLMENT.map(r=>r.inscritos),backgroundColor:'rgba(124,106,247,.75)',borderRadius:5,borderSkipped:false,borderWidth:0},
+      {label:'Presentes',data:ENROLLMENT.map(r=>r.presentes),backgroundColor:'rgba(106,247,200,.75)',borderRadius:5,borderSkipped:false,borderWidth:0},
+      {label:'Faltaram',data:ENROLLMENT.map(r=>r.faltaram),backgroundColor:'rgba(231,58,87,.75)',borderRadius:5,borderSkipped:false,borderWidth:0}
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{color:'#c4b8b9',font:{size:11},boxWidth:12,padding:14}},tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.raw}`}}},scales:{x:{ticks:{color:'#c4b8b9',font:{size:11}},grid:{color:'#5c5254'}},y:{ticks:{color:'#c4b8b9',stepSize:5},grid:{color:'#5c5254'},beginAtZero:true}}}
+});
+
+// ─────────────────────────────────────────────
+// UPDATE ALL
+// ─────────────────────────────────────────────
+function updateAll(){
+  const d=getFiltered();
+  const n=d.length;
+
+  // KPIs
+  document.getElementById('kpi-total').textContent=n;
+  document.getElementById('fi-count').textContent=n;
+  const avgNPS=n?+(d.reduce((s,r)=>s+r.nps,0)/n).toFixed(2):0;
+  document.getElementById('kpi-nps').textContent=avgNPS.toFixed(2);
+  const simI=d.filter(r=>r.int==='Sim').length;
+  document.getElementById('kpi-interesse').textContent=n?Math.round(simI/n*100)+'%':'—';
+  document.getElementById('kpi-interesse-sub').textContent=n?`${simI} de ${n} participantes`:'';
+  const simR=d.filter(r=>r.ret==='Sim').length;
+  document.getElementById('kpi-retorno').textContent=n?Math.round(simR/n*100)+'%':'—';
+  document.getElementById('kpi-retorno-sub').textContent=n?`${simR} participantes recorrentes`:'';
+  const estados=new Set(d.map(r=>r.e));
+  document.getElementById('kpi-estados').textContent=estados.size||'—';
+
+  // NPS gauge
+  const s10=d.filter(r=>r.nps===10).length;
+  const s9=d.filter(r=>r.nps===9).length;
+  const s8=d.filter(r=>r.nps===8).length;
+  const pct=n?Math.round(avgNPS/10*100):0;
+  document.getElementById('nps-circle').style.background=
+    `conic-gradient(#6af7c8 0% ${pct}%, var(--border) ${pct}%)`;
+  document.getElementById('nps-score').textContent=n?avgNPS.toFixed(2):'—';
+  document.getElementById('nps-bar-10').style.width=(n?s10/n*100:0)+'%';
+  document.getElementById('nps-count-10').textContent=s10;
+  document.getElementById('nps-bar-9').style.width=(n?s9/n*100:0)+'%';
+  document.getElementById('nps-count-9').textContent=s9;
+  document.getElementById('nps-bar-8').style.width=(n?s8/n*100:0)+'%';
+  document.getElementById('nps-count-8').textContent=s8;
+
+  // Charts
+  const perfilKeys=['Cabeleireiro','Dono de Salão e Cabeleireiro','Dono de Salão','Terapeuta Capilar','Auxiliar','Outros'];
+  C.perfil.data.datasets[0].data=perfilKeys.map(k=>d.filter(r=>r.p===k).length);
+  C.perfil.update();
+  C.estado.data.datasets[0].data=['SP','RJ','RS'].map(k=>d.filter(r=>r.e===k).length);
+  C.estado.update();
+  C.retorno.data.datasets[0].data=[d.filter(r=>r.ret==='Não').length,d.filter(r=>r.ret==='Sim').length];
+  C.retorno.update();
+  C.interesse.data.datasets[0].data=[simI,d.filter(r=>r.int==='Prefiro não opinar').length,d.filter(r=>r.int==='Não').length];
+  C.interesse.update();
+  C.eventos.data.datasets[0].data=CURSOS_ORDER.map(k=>d.filter(r=>r.c===k).length);
+  C.eventos.update();
+  C.nivel.data.datasets[0].data=['Iniciante','Intermediario','Formado','Avançado','Nenum conhecimento'].map(k=>d.filter(r=>r.niv===k).length);
+  C.nivel.update();
+  C.mes.data.datasets[0].data=['Março','Abril','Maio'].map(k=>d.filter(r=>r.m===k).length);
+  C.mes.update();
+
+  // Table
+  document.querySelectorAll('#evt-tbody tr').forEach(tr=>{
+    const te=tr.dataset.estado, tm=tr.dataset.mes, tc=tr.dataset.curso;
+    const show=
+      (!F.estado.size||F.estado.has(te))&&
+      (!F.mes.size||F.mes.has(tm))&&
+      (!F.curso.size||F.curso.has(tc));
+    tr.classList.toggle('hidden-row',!show);
+  });
+
+  // Enrollment / Presença
+  const fe=ENROLLMENT.filter(r=>
+    (!F.estado.size||F.estado.has(r.e))&&
+    (!F.mes.size||F.mes.has(r.m))&&
+    (!F.curso.size||F.curso.has(r.c))
+  );
+  const totInsc=fe.reduce((s,r)=>s+r.inscritos,0);
+  const totPres=fe.reduce((s,r)=>s+r.presentes,0);
+  const totFalt=fe.reduce((s,r)=>s+r.faltaram,0);
+  document.getElementById('kpi-inscritos').textContent=fe.length?totInsc:'—';
+  document.getElementById('kpi-presentes').textContent=fe.length?totPres:'—';
+  document.getElementById('kpi-presentes-sub').textContent=fe.length?`de ${totInsc} inscritos`:'';
+  document.getElementById('kpi-taxa').textContent=(fe.length&&totInsc)?Math.round(totPres/totInsc*100)+'%':'—';
+  document.getElementById('kpi-faltaram').textContent=fe.length?totFalt:'—';
+  document.getElementById('kpi-faltaram-sub').textContent=fe.length?`de ${totInsc} inscritos`:'';
+  C.presenca.data.labels=fe.map(r=>r.lbl);
+  C.presenca.data.datasets[0].data=fe.map(r=>r.inscritos);
+  C.presenca.data.datasets[1].data=fe.map(r=>r.presentes);
+  C.presenca.data.datasets[2].data=fe.map(r=>r.faltaram);
+  C.presenca.update();
+
+  // Pós-Curso
+  updateFollowup();
+
+  // Quotes
+  ['sugestoes','destaques','equipe'].forEach(tab=>{
+    const panel=document.getElementById('tab-'+tab);
+    let visible=0;
+    panel.querySelectorAll('.quote-wrapper').forEach(w=>{
+      const show=
+        (!F.estado.size||F.estado.has(w.dataset.estado))&&
+        (!F.mes.size||F.mes.has(w.dataset.mes))&&
+        (!F.curso.size||F.curso.has(w.dataset.curso));
+      w.classList.toggle('hidden-quote',!show);
+      if(show) visible++;
+    });
+    const noEl=document.getElementById('no-'+tab);
+    if(noEl) noEl.style.display=visible===0?'block':'none';
+  });
+}
+
+// ─────────────────────────────────────────────
+// PÓS-CURSO
+// ─────────────────────────────────────────────
+const KEYWORDS_DOR = ['marketing','financeiro','precificação','precificacao','gestão','gestao','equipe','corte','mechas','colorimetria','constância','constancia','cliente','produto','técnica','tecnica','terapia capilar','vendas','atendimento'];
+const KEYWORDS_EVOL = ['marketing','financeiro','precificação','precificacao','gestão','gestao','terapia capilar','mechas','corte','colorimetria','vendas','equipe','técnica','tecnica'];
+
+function normTxt(t){return t.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();}
+
+function countKeywords(texts, keys){
+  const cnt={};
+  texts.forEach(t=>{
+    const tn=normTxt(t);
+    keys.forEach(k=>{ if(tn.includes(normTxt(k))) cnt[k]=(cnt[k]||0)+1; });
+  });
+  return Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
+}
+
+function renderFuTags(elId, texts, color, keys){
+  const el=document.getElementById(elId);
+  el.innerHTML='';
+  const pairs=countKeywords(texts,keys);
+  if(!pairs.length){
+    // show full texts as small tags
+    texts.slice(0,12).forEach(t=>{
+      const span=document.createElement('span');
+      span.className='fu-tag';
+      span.style.cssText=`background:${color}18;color:${color};`;
+      span.textContent=t.length>50?t.substring(0,48)+'…':t;
+      el.appendChild(span);
+    });
+    return;
+  }
+  pairs.forEach(([kw,cnt])=>{
+    const span=document.createElement('span');
+    span.className='fu-tag';
+    span.style.cssText=`background:${color}18;color:${color};`;
+    const badge=document.createElement('span');
+    badge.className='fu-tag-count';
+    badge.style.cssText=`background:${color}35;`;
+    badge.textContent=cnt;
+    span.textContent=kw.charAt(0).toUpperCase()+kw.slice(1)+' ';
+    span.appendChild(badge);
+    el.appendChild(span);
+  });
+}
+
+function renderFuQuote(txt, cor, meta){
+  const d=document.createElement('div');
+  d.className='fu-quote';
+  d.style.cssText=`background:${cor}10;border-left-color:${cor};color:var(--text);`;
+  d.innerHTML=`"${txt}"${meta?`<div class="fu-quote-meta">${meta}</div>`:''}`;
+  return d;
+}
+
+function updateFollowup(){
+  const nao=FOLLOWUP.filter(r=>!r.p&&(r.motivo||r.ret||r.dor||r.evoluir));
+  const foi=FOLLOWUP.filter(r=>r.p&&(r.dor||r.evoluir||r.aplicou));
+
+  // KPIs
+  const retSim=nao.filter(r=>normTxt(r.ret||'').startsWith('s'));
+  const aplicList=foi.filter(r=>r.aplicou&&!normTxt(r.aplicou).startsWith('n'));
+  document.getElementById('fu-nao-resp').textContent=nao.length||'—';
+  document.getElementById('fu-retorno').textContent=nao.length?Math.round(retSim.length/nao.length*100)+'%':'—';
+  document.getElementById('fu-comp-resp').textContent=foi.length||'—';
+  document.getElementById('fu-aplicou-pct').textContent=foi.length?aplicList.length+'/'+foi.length:'—';
+
+  // Motivos
+  const motivosEl=document.getElementById('fu-motivos');
+  motivosEl.innerHTML='';
+  const motivos=nao.filter(r=>r.motivo);
+  document.getElementById('fu-motivos-empty').style.display=motivos.length?'none':'block';
+  motivos.forEach(r=>motivosEl.appendChild(renderFuQuote(r.motivo,'#e73a57',r.e)));
+
+  // Interesse em retornar — barra visual
+  const retVis=document.getElementById('fu-retorno-vis');
+  if(nao.length){
+    const pct=Math.round(retSim.length/nao.length*100);
+    retVis.innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="flex:1;background:var(--border);border-radius:4px;height:12px;overflow:hidden"><div style="width:${pct}%;height:100%;background:#6af7c8;border-radius:4px"></div></div><span style="font-size:.85rem;font-weight:700;color:#6af7c8">${pct}%</span></div><span style="font-size:.72rem;color:var(--muted)">${retSim.length} de ${nao.length} respondentes querem participar novamente</span>`;
+  }
+  // Frases de interesse
+  const retTagsEl=document.getElementById('fu-retorno-tags');
+  retTagsEl.innerHTML='';
+  document.getElementById('fu-retorno-empty').style.display=nao.filter(r=>r.ret).length?'none':'block';
+  nao.filter(r=>r.ret).forEach(r=>{
+    const span=document.createElement('span');
+    span.className='fu-tag';
+    const retNorm=normTxt(r.ret||'');
+    const col=retNorm.startsWith('s')?'#6af7c8':'#e73a57';
+    span.style.cssText=`background:${col}18;color:${col};`;
+    span.textContent=r.ret.length>40?r.ret.substring(0,38)+'…':r.ret;
+    retTagsEl.appendChild(span);
+  });
+
+  // Dores do salão
+  const allDores=[...nao.map(r=>r.dor),...foi.map(r=>r.dor)].filter(Boolean);
+  document.getElementById('fu-dores-empty').style.display=allDores.length?'none':'block';
+  renderFuTags('fu-dores', allDores, '#7c6af7', KEYWORDS_DOR);
+  const doresQuotes=document.getElementById('fu-dores-quotes');
+  doresQuotes.innerHTML='';
+  allDores.filter(t=>t.length>30).slice(0,4).forEach(t=>doresQuotes.appendChild(renderFuQuote(t,'#7c6af7','')));
+
+  // Interesse em evoluir
+  const allEvol=[...nao.map(r=>r.evoluir),...foi.map(r=>r.evoluir)].filter(Boolean);
+  document.getElementById('fu-evoluir-empty').style.display=allEvol.length?'none':'block';
+  renderFuTags('fu-evoluir', allEvol, '#f7c26a', KEYWORDS_EVOL);
+  const evolQuotes=document.getElementById('fu-evoluir-quotes');
+  evolQuotes.innerHTML='';
+  allEvol.filter(t=>t.length>30).slice(0,4).forEach(t=>evolQuotes.appendChild(renderFuQuote(t,'#f7c26a','')));
+
+  // Conseguiu aplicar
+  const aplicEl=document.getElementById('fu-aplicou-list');
+  aplicEl.innerHTML='';
+  document.getElementById('fu-aplicou-empty').style.display=foi.filter(r=>r.aplicou).length?'none':'block';
+  foi.filter(r=>r.aplicou).forEach(r=>aplicEl.appendChild(renderFuQuote(r.aplicou,'#6af7c8',r.e)));
+}
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.style.display='none');
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).style.display='block';
+  });
+});
+
+// Init
+updateAll();
+</script>
+</body>
+</html>

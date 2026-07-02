@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "pipeline-mkt",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-p", "3030", "D:/Downloads/10_IA"],
+      "port": 3030
+    }
+  ]
+}

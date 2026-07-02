@@ -1,0 +1,1294 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Dashboard | Cursos — KAMI For Education</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#332c2d;--card:#463e3f;--border:#5c5254;--accent:#7c6af7;--accent2:#f76a8c;--accent3:#6af7c8;--accent4:#f7c26a;--text:#f0eee8;--muted:#c4b8b9;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;padding:24px;}
+header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;background:#e73a57;border-radius:14px;padding:20px 24px;}
+header h1{font-size:1.7rem;font-weight:800;line-height:1.15;color:#f0eee8;}
+header h1 .hl{color:#f0eee8;}
+header .header-sub{font-size:.82rem;color:#f0eee8;margin-top:5px;line-height:1.6;opacity:.9;}
+header .header-sub strong{color:#f0eee8;font-weight:600;}
+.badge{background:var(--accent);color:#fff;font-size:.75rem;font-weight:600;padding:4px 12px;border-radius:20px;}
+
+/* ── Filter bar ── */
+.filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 18px;margin-bottom:20px;}
+.filter-bar label{font-size:.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-right:4px;}
+.fgroup{position:relative;}
+.fbtn{background:var(--border);color:var(--text);border:1px solid transparent;border-radius:8px;padding:7px 14px;font-size:.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s,border-color .15s;}
+.fbtn:hover,.fbtn.open{background:#5c5254;border-color:#e1092b;}
+.fbtn.has-sel{border-color:#e1092b;background:rgba(225,9,43,.12);}
+.fbadge{background:#e1092b;color:#fff;border-radius:10px;font-size:.68rem;font-weight:700;padding:1px 6px;min-width:18px;text-align:center;}
+.fdrop{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:100;background:#3a3334;border:1px solid var(--border);border-radius:10px;padding:10px 0;min-width:230px;max-height:320px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.6);}
+.fdrop.open{display:block;}
+.fdrop-item{display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:pointer;font-size:.82rem;color:var(--text);transition:background .1s;}
+.fdrop-item:hover{background:rgba(124,106,247,.1);}
+.fdrop-item input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;flex-shrink:0;}
+.fdrop-sep{height:1px;background:var(--border);margin:4px 0;}
+.fdrop-todos{font-weight:700;color:var(--text)!important;border-bottom:1px solid var(--border);margin-bottom:2px;}
+.btn-clear-all{margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:7px 14px;font-size:.78rem;cursor:pointer;transition:border-color .15s,color .15s;}
+.btn-clear-all:hover{border-color:var(--accent2);color:var(--accent2);}
+#filter-info{font-size:.78rem;color:var(--muted);white-space:nowrap;}
+#filter-info strong{color:var(--text);}
+
+/* ── KPI strip ── */
+.kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:16px;margin-bottom:24px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 18px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:4px 0 0 4px;}
+.kpi.purple::before{background:var(--accent);}
+.kpi.pink::before{background:#6af7c8;}
+.kpi.green::before{background:#6af7c8;}
+.kpi.yellow::before{background:var(--accent4);}
+.kpi.blue::before{background:#6ab0f7;}
+.kpi.red::before{background:#e73a57;}
+.kpi-label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.kpi-value{font-size:2rem;font-weight:800;line-height:1;}
+.kpi-sub{font-size:.7rem;color:var(--muted);margin-top:6px;}
+.kpi.purple .kpi-value{color:var(--accent);}
+.kpi.pink .kpi-value{color:#6af7c8;}
+.kpi.green .kpi-value{color:#6af7c8;}
+.kpi.yellow .kpi-value{color:var(--accent4);}
+.kpi.blue .kpi-value{color:#6ab0f7;}
+.kpi.red .kpi-value{color:#e73a57;}
+
+/* ── Grid ── */
+.grid{display:grid;gap:20px;margin-bottom:20px;}
+.grid-2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr));}
+.grid-3{grid-template-columns:repeat(auto-fit,minmax(265px,1fr));}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;}
+.card h2{font-size:.82rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:18px;}
+.chart-wrap{position:relative;width:100%;}
+.chart-wrap.tall{height:280px;}
+.chart-wrap.med{height:240px;}
+
+/* ── NPS ── */
+.nps-block{display:flex;align-items:center;gap:32px;flex-wrap:wrap;}
+.nps-circle{width:120px;height:120px;border-radius:50%;background:conic-gradient(var(--accent3) 0% 99%,var(--border) 99%);display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;}
+.nps-circle::after{content:'';width:82px;height:82px;background:var(--card);border-radius:50%;position:absolute;}
+.nps-inner{position:absolute;z-index:1;text-align:center;}
+.nps-score{font-size:2rem;font-weight:800;color:#6af7c8;}
+.nps-label{font-size:.65rem;color:var(--muted);}
+.nps-dist{flex:1;display:flex;flex-direction:column;gap:8px;min-width:180px;}
+.nps-bar-row{display:flex;align-items:center;gap:10px;font-size:.78rem;}
+.nps-bar-row .score-lbl{width:24px;text-align:right;color:var(--muted);font-weight:600;}
+.nps-bar-bg{flex:1;background:var(--border);border-radius:4px;height:10px;overflow:hidden;}
+.nps-bar-fill{height:100%;border-radius:4px;transition:width .3s;}
+.nps-bar-count{width:32px;text-align:right;color:var(--muted);}
+
+/* ── Events table ── */
+.evt-table{width:100%;border-collapse:collapse;font-size:.8rem;}
+.evt-table th{color:var(--muted);text-align:left;padding:6px 10px;font-weight:600;text-transform:uppercase;font-size:.72rem;letter-spacing:.4px;border-bottom:1px solid var(--border);}
+.evt-table td{padding:9px 10px;border-bottom:1px solid var(--border);}
+.evt-table tr:last-child td{border-bottom:none;}
+.evt-table tr.hidden-row{display:none;}
+.pill{display:inline-block;padding:2px 9px;border-radius:12px;font-size:.7rem;font-weight:600;}
+.pill-sp{background:rgba(124,106,247,.2);color:var(--accent);}
+.pill-rj{background:rgba(247,106,140,.2);color:var(--accent2);}
+.pill-rs{background:rgba(106,247,200,.2);color:var(--accent3);}
+.pill-on{background:rgba(247,194,106,.2);color:var(--accent4);}
+.scroll-x{overflow-x:auto;}
+
+/* ── Qualitative ── */
+.tab-btn{background:var(--border);color:var(--muted);border:none;border-radius:8px;padding:8px 16px;font-size:.8rem;font-weight:600;cursor:pointer;transition:background .2s,color .2s;}
+.tab-btn.active,.tab-btn:hover{background:var(--accent);color:#fff;}
+.quotes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.quote-card{border-radius:10px;padding:14px 16px;border-left:4px solid transparent;}
+.quote-card.orange{background:rgba(245,220,0,.07);border-color:#f5dc00;}
+.quote-card.green{background:rgba(106,247,200,.07);border-color:var(--accent3);}
+.quote-card.purple{background:rgba(124,106,247,.07);border-color:var(--accent);}
+.quote-wrapper.hidden-quote{display:none;}
+.no-quotes{color:var(--muted);font-size:.85rem;padding:20px 0;text-align:center;display:none;}
+.quote-meta{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+.qpill{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;}
+.qname{font-size:.78rem;font-weight:600;color:var(--text);}
+.quote-text{font-size:.82rem;color:#c8cad8;line-height:1.55;font-style:italic;}
+
+#enroll-strip .kpi{background:#f0eee8;border-color:#dedad4;}
+#enroll-strip .kpi-label{color:#463e3f;}
+#enroll-strip .kpi-sub{color:#463e3f;opacity:.65;}
+#enroll-strip .kpi.green .kpi-value{color:#0e8a5f;}
+#enroll-strip .kpi.green::before{background:#0e8a5f;}
+#enroll-strip .kpi.pink .kpi-value{color:#0e8a5f;}
+#enroll-strip .kpi.pink::before{background:#0e8a5f;}
+/* ── Page Tabs ── */
+.page-tabs{display:flex;gap:6px;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:10px 14px;margin-bottom:20px;}
+.page-tab-btn{background:transparent;color:var(--muted);border:1px solid transparent;border-radius:8px;padding:8px 16px;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.page-tab-btn:hover{background:var(--border);color:var(--text);}
+.page-tab-btn.active{background:#e73a57;color:#f0eee8;border-color:#e73a57;}
+.page-panel{display:none;}
+.page-panel.active{display:block;}
+@media(max-width:600px){body{padding:14px;}.kpi-strip{grid-template-columns:1fr 1fr;}}
+
+/* ── Pós-Curso ── */
+.fu-section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:20px;}
+.fu-section h2{font-size:.82rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:18px;}
+.fu-kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
+.fu-kpi{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+.fu-kpi .kpi-label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+.fu-kpi .kpi-value{font-size:1.6rem;font-weight:800;line-height:1;}
+.fu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;}
+.fu-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media(max-width:700px){.fu-grid-2{grid-template-columns:1fr;}}
+.fu-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.fu-card-title{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;}
+.fu-tags{display:flex;flex-wrap:wrap;gap:8px;}
+.fu-tag{border-radius:20px;padding:5px 12px;font-size:.78rem;font-weight:600;display:inline-flex;align-items:center;gap:6px;}
+.fu-tag-count{border-radius:10px;padding:1px 6px;font-size:.68rem;font-weight:700;}
+.fu-quote{border-radius:8px;padding:11px 14px;border-left:3px solid transparent;margin-bottom:8px;font-size:.8rem;line-height:1.5;font-style:italic;}
+.fu-quote-meta{font-size:.68rem;margin-top:5px;opacity:.6;font-style:normal;font-weight:600;}
+</style>
+</head>
+<body>
+<!-- Loading overlay -->
+<div id="loading-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(18,14,15,.92);align-items:center;justify-content:center;flex-direction:column;gap:16px">
+  <div style="width:48px;height:48px;border:4px solid #3a2f31;border-top-color:#7c6af7;border-radius:50%;animation:spin .8s linear infinite"></div>
+  <div style="color:#c4b8b9;font-size:.9rem">Carregando dados da planilha…</div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<header>
+  <div>
+    <h1>Dashboard | <span class="hl">Cursos</span></h1>
+    <div class="header-sub">
+      <strong>KAMI For Education • Toctus &amp; Balens • 2026</strong><br>
+      Período de análise: Março — Junho 2026
+    </div>
+  </div>
+  <span class="badge" id="badge-update" style="background:rgba(0,0,0,.25);color:#f0eee8;">Atualizado: —</span>
+</header>
+
+<!-- Page Tabs Navigation -->
+<div class="page-tabs">
+  <button class="page-tab-btn active" data-page="geral">📊 Geral</button>
+  <button class="page-tab-btn" data-page="inscritos">📋 Inscritos</button>
+  <button class="page-tab-btn" data-page="satisfacao">⭐ Satisfação</button>
+  <button class="page-tab-btn" data-page="perfil">👤 Perfil</button>
+  <button class="page-tab-btn" data-page="pos-curso">📝 Pós Curso</button>
+  <button class="page-tab-btn" data-page="dores">💡 Dores &amp; Necessidades</button>
+</div>
+
+<!-- Filter bar -->
+<div class="filter-bar">
+  <label>Filtros:</label>
+
+  <div class="fgroup" id="fgroup-estado">
+    <button class="fbtn" id="fbtn-estado" onclick="toggleDrop('estado')">
+      Estado <span class="fbadge" id="badge-estado" style="display:none">0</span> ▾
+    </button>
+    <div class="fdrop" id="fdrop-estado">
+      <label class="fdrop-item fdrop-todos"><input type="checkbox" data-group="estado" data-all="true"> Todos</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="estado" value="SP"> São Paulo</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="estado" value="RJ"> Rio de Janeiro</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="estado" value="RS"> Rio Grande do Sul</label>
+    </div>
+  </div>
+
+  <div class="fgroup" id="fgroup-mes">
+    <button class="fbtn" id="fbtn-mes" onclick="toggleDrop('mes')">
+      Mês <span class="fbadge" id="badge-mes" style="display:none">0</span> ▾
+    </button>
+    <div class="fdrop" id="fdrop-mes">
+      <label class="fdrop-item fdrop-todos"><input type="checkbox" data-group="mes" data-all="true"> Todos</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="mes" value="Março"> Março</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="mes" value="Abril"> Abril</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="mes" value="Maio"> Maio</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="mes" value="Junho"> Junho</label>
+    </div>
+  </div>
+
+  <div class="fgroup" id="fgroup-curso">
+    <button class="fbtn" id="fbtn-curso" onclick="toggleDrop('curso')">
+      Curso <span class="fbadge" id="badge-curso" style="display:none">0</span> ▾
+    </button>
+    <div class="fdrop" id="fdrop-curso">
+      <label class="fdrop-item fdrop-todos"><input type="checkbox" data-group="curso" data-all="true"> Todos</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="09/03 · SP"> 09/03 · São Paulo</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="16/03 · Online"> 16/03 · Online</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="23/03 · RJ — Adriano"> 23/03 · RJ — Adriano</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="23/03 · RS — Anderson"> 23/03 · RS — Anderson</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="23/03 · SP — Beto"> 23/03 · SP — Beto</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="30/03 · RJ — Michele Souza"> 30/03 · RJ — Michele Souza</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="30/03 · RS — Mariana Compagnoni"> 30/03 · RS — Mariana Compagnoni</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="30/03 · SP — Ana Paula Soares"> 30/03 · SP — Ana Paula Soares</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="27/04 · RJ — Virginia Nascimento"> 27/04 · RJ — Virginia Nascimento</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="27/04 · RS — Anderson Claro"> 27/04 · RS — Anderson Claro</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="27/04 · SP — Beto, Dani, Luiza e Paula"> 27/04 · SP — Beto, Dani, Luiza e Paula</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="04/05 · SP — Encontro Toctus c/ Hellen Anício"> 04/05 · SP — Encontro Toctus c/ Hellen Anício</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="11/05 · SP — Terapia Capilar c/ Ana Soares"> 11/05 · SP — Terapia Capilar c/ Ana Soares</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi"> 11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="18/05 · RS — Terapia Capilar c/ Gheuri Zangelmi"> 18/05 · RS — Terapia Capilar c/ Gheuri Zangelmi</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="25/05 · SP — Art of Color (Balens)"> 25/05 · SP — Art of Color (Balens)</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="25/05 · RJ — Art of Color (Balens)"> 25/05 · RJ — Art of Color (Balens)</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="08/06 · RJ — Patologias &amp; Protocolos"> 08/06 · RJ — Patologias &amp; Protocolos</label>
+      <label class="fdrop-item"><input type="checkbox" data-group="curso" value="08/06 · SP — Patologias &amp; Protocolos"> 08/06 · SP — Patologias &amp; Protocolos</label>
+    </div>
+  </div>
+
+  <button class="btn-clear-all" onclick="clearAll()">✕ Limpar filtros</button>
+  <span id="filter-info"><strong id="fi-count">165</strong> respostas selecionadas</span>
+</div>
+
+<!-- ── TAB: GERAL ── -->
+<div class="page-panel active" id="page-geral">
+
+<!-- KPIs -->
+<div class="kpi-strip">
+  <div class="kpi purple"><div class="kpi-label">Total de Respostas</div><div class="kpi-value" id="kpi-total">189</div><div class="kpi-sub" id="kpi-eventos-sub">15 eventos</div></div>
+  <div class="kpi green"><div class="kpi-label">NPS Médio</div><div class="kpi-value" id="kpi-nps">9.95</div><div class="kpi-sub">Escala 0–10</div></div>
+  <div class="kpi pink"><div class="kpi-label">Interesse em Novos Eventos</div><div class="kpi-value" id="kpi-interesse">97%</div><div class="kpi-sub" id="kpi-interesse-sub"></div></div>
+  <div class="kpi yellow"><div class="kpi-label">Já Participou Antes</div><div class="kpi-value" id="kpi-retorno">—</div><div class="kpi-sub" id="kpi-retorno-sub"></div></div>
+  <div class="kpi blue"><div class="kpi-label">Estados Atendidos</div><div class="kpi-value" id="kpi-estados">3</div><div class="kpi-sub">SP · RJ · RS</div></div>
+</div>
+
+<!-- Participações por Evento -->
+<div class="card" style="margin-bottom:20px">
+  <h2>Participações por Evento</h2>
+  <div class="chart-wrap tall"><canvas id="chartEventos"></canvas></div>
+</div>
+
+<!-- Respostas por Mês + Detalhe por Evento -->
+<div class="grid grid-2" style="margin-bottom:20px">
+  <div class="card"><h2>Respostas por Mês</h2><div class="chart-wrap med"><canvas id="chartMes"></canvas></div></div>
+  <div class="card">
+    <h2>Detalhe por Evento</h2>
+    <div class="scroll-x">
+      <table class="evt-table">
+        <thead><tr><th>Data</th><th>Evento / Educador</th><th>Estado</th><th>Respostas</th><th>NPS Médio</th></tr></thead>
+        <tbody id="evt-tbody">
+          <tr data-estado="SP" data-mes="Março" data-curso="09/03 · SP"><td>09/03</td><td>São Paulo</td><td><span class="pill pill-sp">SP</span></td><td>8</td><td>10,0</td></tr>
+          <tr data-estado="SP" data-mes="Março" data-curso="16/03 · Online"><td>16/03</td><td>Online</td><td><span class="pill pill-on">Online</span></td><td>2</td><td>10,0</td></tr>
+          <tr data-estado="RJ" data-mes="Março" data-curso="23/03 · RJ — Adriano"><td>23/03</td><td>Rio de Janeiro — Adriano</td><td><span class="pill pill-rj">RJ</span></td><td>17</td><td>10,0</td></tr>
+          <tr data-estado="RS" data-mes="Março" data-curso="23/03 · RS — Anderson"><td>23/03</td><td>Rio Grande do Sul — Anderson</td><td><span class="pill pill-rs">RS</span></td><td>12</td><td>10,0</td></tr>
+          <tr data-estado="SP" data-mes="Março" data-curso="23/03 · SP — Beto"><td>23/03</td><td>São Paulo — Beto</td><td><span class="pill pill-sp">SP</span></td><td>16</td><td>10,0</td></tr>
+          <tr data-estado="RJ" data-mes="Março" data-curso="30/03 · RJ — Michele Souza"><td>30/03</td><td>Rio de Janeiro — Michele Souza</td><td><span class="pill pill-rj">RJ</span></td><td>19</td><td>9,9</td></tr>
+          <tr data-estado="RS" data-mes="Março" data-curso="30/03 · RS — Mariana Compagnoni"><td>30/03</td><td>Rio Grande do Sul — Mariana Compagnoni</td><td><span class="pill pill-rs">RS</span></td><td>6</td><td>10,0</td></tr>
+          <tr data-estado="SP" data-mes="Março" data-curso="30/03 · SP — Ana Paula Soares"><td>30/03</td><td>São Paulo — Ana Paula Soares</td><td><span class="pill pill-sp">SP</span></td><td>17</td><td>10,0</td></tr>
+          <tr data-estado="RJ" data-mes="Abril" data-curso="27/04 · RJ — Virginia Nascimento"><td>27/04</td><td>Rio de Janeiro — Virginia Nascimento</td><td><span class="pill pill-rj">RJ</span></td><td>3</td><td>9,3</td></tr>
+          <tr data-estado="RS" data-mes="Abril" data-curso="27/04 · RS — Anderson Claro"><td>27/04</td><td>Rio Grande do Sul — Anderson Claro</td><td><span class="pill pill-rs">RS</span></td><td>6</td><td>9,8</td></tr>
+          <tr data-estado="SP" data-mes="Abril" data-curso="27/04 · SP — Beto, Dani, Luiza e Paula"><td>27/04</td><td>São Paulo — Beto, Dani, Luiza e Paula</td><td><span class="pill pill-sp">SP</span></td><td>17</td><td>10,0</td></tr>
+          <tr data-estado="SP" data-mes="Maio" data-curso="04/05 · SP — Encontro Toctus c/ Hellen Anício"><td>04/05</td><td>São Paulo — Encontro Toctus c/ Hellen Anício</td><td><span class="pill pill-sp">SP</span></td><td>15</td><td>9,9</td></tr>
+          <tr data-estado="SP" data-mes="Maio" data-curso="11/05 · SP — Terapia Capilar c/ Ana Soares"><td>11/05</td><td>São Paulo — Terapia Capilar c/ Ana Soares</td><td><span class="pill pill-sp">SP</span></td><td>19</td><td>10,0</td></tr>
+          <tr data-estado="RJ" data-mes="Maio" data-curso="11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi"><td>11/05</td><td>Rio de Janeiro — Terapia Capilar c/ Gheuri Zangelmi</td><td><span class="pill pill-rj">RJ</span></td><td>18</td><td>9,9</td></tr>
+          <tr data-estado="RS" data-mes="Maio" data-curso="18/05 · RS — Terapia Capilar c/ Gheuri Zangelmi"><td>18/05</td><td>Rio Grande do Sul — Terapia Capilar c/ Gheuri Zangelmi</td><td><span class="pill pill-rs">RS</span></td><td>14</td><td>9,9</td></tr>
+          <tr data-estado="SP" data-mes="Maio" data-curso="25/05 · SP — Art of Color (Balens)"><td>25/05</td><td>São Paulo — Art of Color (Balens)</td><td><span class="pill pill-sp">SP</span></td><td>—</td><td>—</td></tr>
+          <tr data-estado="RJ" data-mes="Maio" data-curso="25/05 · RJ — Art of Color (Balens)"><td>25/05</td><td>Rio de Janeiro — Art of Color (Balens)</td><td><span class="pill pill-rj">RJ</span></td><td>—</td><td>—</td></tr>
+          <tr data-estado="RJ" data-mes="Junho" data-curso="08/06 · RJ — Patologias &amp; Protocolos"><td>08/06</td><td>Rio de Janeiro — Patologias &amp; Protocolos</td><td><span class="pill pill-rj">RJ</span></td><td>—</td><td>—</td></tr>
+          <tr data-estado="SP" data-mes="Junho" data-curso="08/06 · SP — Patologias &amp; Protocolos"><td>08/06</td><td>São Paulo — Patologias &amp; Protocolos</td><td><span class="pill pill-sp">SP</span></td><td>—</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- /page-geral -->
+
+<!-- ── TAB: INSCRITOS ── -->
+<div class="page-panel" id="page-inscritos">
+
+<!-- Enrollment KPIs -->
+<div class="kpi-strip" id="enroll-strip" style="margin-bottom:20px">
+  <div class="kpi purple"><div class="kpi-label">Total Inscritos</div><div class="kpi-value" id="kpi-inscritos">204</div><div class="kpi-sub" id="kpi-inscritos-sub">em todos os eventos</div></div>
+  <div class="kpi green"><div class="kpi-label">Total Presentes</div><div class="kpi-value" id="kpi-presentes">120</div><div class="kpi-sub" id="kpi-presentes-sub">de 204 inscritos</div></div>
+  <div class="kpi pink"><div class="kpi-label">Taxa de Presença</div><div class="kpi-value" id="kpi-taxa">59%</div><div class="kpi-sub">do total inscrito</div></div>
+  <div class="kpi red"><div class="kpi-label">Total Faltaram</div><div class="kpi-value" id="kpi-faltaram">84</div><div class="kpi-sub" id="kpi-faltaram-sub">de 204 inscritos</div></div>
+</div>
+
+<!-- Inscritos × Presença -->
+<div class="card" style="margin-bottom:20px" id="card-presenca">
+  <h2>Inscritos × Presentes × Faltaram <span id="presenca-subtitle" style="font-size:.7rem;color:var(--accent4)"></span></h2>
+  <div class="chart-wrap tall"><canvas id="chartPresenca"></canvas></div>
+</div>
+
+</div><!-- /page-inscritos -->
+
+<!-- ── TAB: SATISFAÇÃO ── -->
+<div class="page-panel" id="page-satisfacao">
+
+<!-- KPIs satisfação -->
+<div class="kpi-strip" style="margin-bottom:20px">
+  <div class="kpi purple"><div class="kpi-label">Total de Respostas</div><div class="kpi-value" id="kpi-sat-total">189</div><div class="kpi-sub">participantes avaliaram</div></div>
+  <div class="kpi green"><div class="kpi-label">NPS Médio</div><div class="kpi-value" id="kpi-sat-nps">9.95</div><div class="kpi-sub">Escala 0–10</div></div>
+  <div class="kpi pink"><div class="kpi-label">Interesse em Novos Eventos</div><div class="kpi-value" id="kpi-sat-interesse">97%</div><div class="kpi-sub"></div></div>
+  <div class="kpi yellow"><div class="kpi-label">Já Participou Antes</div><div class="kpi-value" id="kpi-sat-retorno">—</div><div class="kpi-sub"></div></div>
+</div>
+
+<!-- NPS card -->
+<div class="card" style="margin-bottom:20px">
+  <h2>Indicação do Curso (NPS)</h2>
+  <div class="nps-block">
+    <div class="nps-circle" id="nps-circle">
+      <div class="nps-inner"><div class="nps-score" id="nps-score">9.95</div><div class="nps-label">NPS</div></div>
+    </div>
+    <div class="nps-dist">
+      <div class="nps-bar-row"><span class="score-lbl">10</span><div class="nps-bar-bg"><div class="nps-bar-fill" id="nps-bar-10" style="width:93%;background:#6af7c8"></div></div><span class="nps-bar-count" id="nps-count-10">153</span></div>
+      <div class="nps-bar-row"><span class="score-lbl">9</span><div class="nps-bar-bg"><div class="nps-bar-fill" id="nps-bar-9" style="width:6%;background:var(--accent4)"></div></div><span class="nps-bar-count" id="nps-count-9">11</span></div>
+      <div class="nps-bar-row"><span class="score-lbl">8</span><div class="nps-bar-bg"><div class="nps-bar-fill" id="nps-bar-8" style="width:1%;background:#e73a57"></div></div><span class="nps-bar-count" id="nps-count-8">1</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Qualitative -->
+<div class="card" style="margin-bottom:20px">
+  <h2>Principais Sugestões &amp; Destaques Qualitativos</h2>
+  <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+    <button class="tab-btn active" data-tab="sugestoes">⚠️ Sugestões de Melhoria</button>
+    <button class="tab-btn" data-tab="destaques">⭐⭐⭐ Destaques Positivos</button>
+    <button class="tab-btn" data-tab="equipe">👏 Elogios à Equipe</button>
+  </div>
+
+  <!-- Sugestões -->
+  <div id="tab-sugestoes" class="tab-panel">
+    <div class="quotes-grid" id="quotes-grid-sugestoes"></div>
+    <p class="no-quotes" id="no-sugestoes">Nenhuma sugestão para os filtros selecionados.</p>
+  </div>
+
+  <!-- Destaques -->
+  <div id="tab-destaques" class="tab-panel" style="display:none">
+    <div class="quotes-grid" id="quotes-grid-destaques"></div>
+    <p class="no-quotes" id="no-destaques">Nenhum destaque para os filtros selecionados.</p>
+  </div>
+
+  <!-- Elogios -->
+  <div id="tab-equipe" class="tab-panel" style="display:none">
+    <div class="quotes-grid" id="quotes-grid-equipe"></div>
+    <p class="no-quotes" id="no-equipe">Nenhum elogio para os filtros selecionados.</p>
+  </div>
+</div>
+
+</div><!-- /page-satisfacao -->
+
+<!-- ── TAB: PERFIL ── -->
+<div class="page-panel" id="page-perfil">
+
+<div class="grid grid-2">
+  <div class="card"><h2>Perfil Profissional</h2><div class="chart-wrap med"><canvas id="chartPerfil"></canvas></div></div>
+  <div class="card"><h2>Participantes por Estado</h2><div class="chart-wrap med"><canvas id="chartEstado"></canvas></div></div>
+</div>
+<div class="grid grid-2" style="margin-bottom:20px">
+  <div class="card"><h2>Já Participou de Cursos Antes?</h2><div class="chart-wrap med"><canvas id="chartRetorno"></canvas></div></div>
+  <div class="card"><h2>Interesse em Novos Eventos?</h2><div class="chart-wrap med"><canvas id="chartInteresse"></canvas></div></div>
+</div>
+<div class="card" style="margin-bottom:20px">
+  <h2>Nível com Terapia Capilar <span style="font-size:.7rem;color:var(--accent4)">(eventos mai–jun/2026)</span></h2>
+  <div class="chart-wrap med"><canvas id="chartNivel"></canvas></div>
+</div>
+
+</div><!-- /page-perfil -->
+
+<!-- ── TAB: PÓS CURSO ── -->
+<div class="page-panel" id="page-pos-curso">
+
+<div class="fu-section">
+  <h2>Pesquisa Pós-Curso — Quem Não Foi &amp; Quem Foi</h2>
+
+  <!-- KPIs -->
+  <div class="fu-kpi-row">
+    <div class="fu-kpi">
+      <div class="kpi-label">Respondentes (faltaram)</div>
+      <div class="kpi-value" id="fu-nao-resp" style="color:var(--accent)">—</div>
+    </div>
+    <div class="fu-kpi">
+      <div class="kpi-label">Querem retornar</div>
+      <div class="kpi-value" id="fu-retorno" style="color:#6af7c8">—</div>
+    </div>
+    <div class="fu-kpi">
+      <div class="kpi-label">Respondentes (foram)</div>
+      <div class="kpi-value" id="fu-comp-resp" style="color:var(--accent)">—</div>
+    </div>
+    <div class="fu-kpi">
+      <div class="kpi-label">Conseguiram aplicar</div>
+      <div class="kpi-value" id="fu-aplicou-pct" style="color:#6af7c8">—</div>
+    </div>
+  </div>
+
+  <!-- Gráficos pós-curso -->
+  <div class="fu-grid-2" style="margin-bottom:16px">
+    <div class="fu-card">
+      <div class="fu-card-title">Motivos de ausência — recorrências</div>
+      <div style="position:relative;height:210px"><canvas id="chartMotivos"></canvas></div>
+      <p id="chartMotivos-empty" style="font-size:.78rem;color:var(--muted);text-align:center;padding:16px 0;display:none">Sem dados suficientes.</p>
+    </div>
+    <div class="fu-card">
+      <div class="fu-card-title">Interesse em retornar</div>
+      <div style="position:relative;height:210px"><canvas id="chartRetornoFu"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Motivos + Interesse: linha 50/50 -->
+  <div class="fu-grid-2">
+    <!-- Motivos de ausência -->
+    <div class="fu-card">
+      <div class="fu-card-title">Motivos de ausência</div>
+      <div id="fu-motivos"></div>
+      <p id="fu-motivos-empty" style="font-size:.78rem;color:var(--muted);display:none">Sem respostas para exibir.</p>
+    </div>
+
+    <!-- Interesse em retornar -->
+    <div class="fu-card">
+      <div class="fu-card-title">Interesse em participar novamente</div>
+      <div id="fu-retorno-vis" style="margin-bottom:12px"></div>
+      <div class="fu-tags" id="fu-retorno-tags"></div>
+      <p id="fu-retorno-empty" style="font-size:.78rem;color:var(--muted);display:none">Sem respostas para exibir.</p>
+    </div>
+  </div>
+
+  <!-- Conseguiu aplicar: largura total -->
+  <div class="fu-card">
+    <div class="fu-card-title">O que conseguiu aplicar (quem foi ao curso)</div>
+    <div id="fu-aplicou-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-top:4px"></div>
+    <p id="fu-aplicou-empty" style="font-size:.78rem;color:var(--muted);display:none">Sem respostas para exibir.</p>
+  </div>
+</div>
+
+</div><!-- /page-pos-curso -->
+
+<!-- ── TAB: DORES & NECESSIDADES ── -->
+<div class="page-panel" id="page-dores">
+
+<div class="fu-section">
+  <h2>Mapeamento de Dores &amp; Necessidades</h2>
+
+  <!-- Gráficos dores & evoluir -->
+  <div class="fu-grid-2" style="margin-bottom:16px">
+    <div class="fu-card">
+      <div class="fu-card-title">Dores mais recorrentes</div>
+      <div style="position:relative;height:240px"><canvas id="chartDoresBar"></canvas></div>
+      <p id="chartDoresBar-empty" style="font-size:.78rem;color:var(--muted);text-align:center;padding:16px 0;display:none">Sem dados suficientes.</p>
+    </div>
+    <div class="fu-card">
+      <div class="fu-card-title">Áreas de interesse em evoluir</div>
+      <div style="position:relative;height:240px"><canvas id="chartEvolBar"></canvas></div>
+      <p id="chartEvolBar-empty" style="font-size:.78rem;color:var(--muted);text-align:center;padding:16px 0;display:none">Sem dados suficientes.</p>
+    </div>
+  </div>
+
+  <div class="fu-grid">
+    <!-- Dores do salão -->
+    <div class="fu-card">
+      <div class="fu-card-title">Principais dores do salão — falas</div>
+      <div class="fu-tags" id="fu-dores"></div>
+      <div id="fu-dores-quotes" style="margin-top:10px"></div>
+      <p id="fu-dores-empty" style="font-size:.78rem;color:var(--muted);display:none">Sem respostas para exibir.</p>
+    </div>
+
+    <!-- Interesse em evoluir -->
+    <div class="fu-card">
+      <div class="fu-card-title">Áreas de interesse em evoluir — falas</div>
+      <div class="fu-tags" id="fu-evoluir"></div>
+      <div id="fu-evoluir-quotes" style="margin-top:10px"></div>
+      <p id="fu-evoluir-empty" style="font-size:.78rem;color:var(--muted);display:none">Sem respostas para exibir.</p>
+    </div>
+  </div>
+</div>
+
+</div><!-- /page-dores -->
+
+<script>
+// ─────────────────────────────────────────────
+// DATA — carregado dinamicamente da planilha
+// ─────────────────────────────────────────────
+let ALL = [];
+
+const SHEET_ID = '1kwoYFnYB3nAH0pktwTabr3i6XplS4qyvYzij4WzZzTk';
+const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+
+// Mapeamento: nome do curso na planilha → chave interna dos filtros
+const CURSO_MAP = {
+  '09/03 | São Paulo': '09/03 · SP',
+  '16/03 | Online': '16/03 · Online',
+  '23/03 | Rio de Janeiro - Adriano': '23/03 · RJ — Adriano',
+  '23/03 | Rio Grande do Sul - Anderson': '23/03 · RS — Anderson',
+  '23/03 | São Paulo - Beto': '23/03 · SP — Beto',
+  '30/03 | Rio de Janeiro - Michele Souza': '30/03 · RJ — Michele Souza',
+  '30/03 | Rio Grande do Sul - Mariana Compagnoni': '30/03 · RS — Mariana Compagnoni',
+  '30/03 | São Paulo - Ana Paula Soares': '30/03 · SP — Ana Paula Soares',
+  '27/04 | Rio de Janeiro - Virginia Nascimento': '27/04 · RJ — Virginia Nascimento',
+  '27/04 | Rio Grande do Sul - Anderson Claro': '27/04 · RS — Anderson Claro',
+  '27/04 | São Paulo - Beto, Dani, Luiza e Paula': '27/04 · SP — Beto, Dani, Luiza e Paula',
+  '04/05 | São Paulo - Encontro Toctus com Hellen Anício': '04/05 · SP — Encontro Toctus c/ Hellen Anício',
+  '11/05 | São Paulo - Terapia Capilar - com Ana Soares': '11/05 · SP — Terapia Capilar c/ Ana Soares',
+  '11/05 | Rio de Janeiro - Terapia Capilar - Como transformar suas práticas profissionais - com Gheuri Zangelmi': '11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi',
+  '18/05 | Rio Grande do Sul - Terapia Capilar - Como transformar suas práticas profissionais - com Gheuri Zangelmi': '18/05 · RS — Terapia Capilar c/ Gheuri Zangelmi',
+  '25/05 | São Paulo - Art of Color (Balens - Luiza Amorim e Dani Alves)': '25/05 · SP — Art of Color (Balens)',
+  '25/05 | Rio de Janeiro - Art of Color (Balens - Erick Mendes)': '25/05 · RJ — Art of Color (Balens)',
+  '08/06 | São Paulo - Patologias & Protocolos': '08/06 · SP — Patologias & Protocolos',
+  '08/06 | Rio de Janeiro - Patologias & Protocolos': '08/06 · RJ — Patologias & Protocolos',
+};
+const ESTADO_MAP = {'São Paulo':'SP','Rio de Janeiro':'RJ','Rio Grande do Sul':'RS'};
+const MES_MAP = {'01':'Janeiro','02':'Fevereiro','03':'Março','04':'Abril','05':'Maio','06':'Junho','07':'Julho','08':'Agosto','09':'Setembro','10':'Outubro','11':'Novembro','12':'Dezembro'};
+
+// Parser CSV robusto (suporta campos com vírgulas entre aspas)
+function parseCSVRow(line){
+  const res=[]; let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+    else if(ch===','&&!inQ){res.push(cur);cur='';}
+    else cur+=ch;
+  }
+  res.push(cur); return res;
+}
+function parseCSV(text){
+  const lines=text.replace(/\r/g,'').split('\n').filter(l=>l.trim());
+  const headers=parseCSVRow(lines[0]).map(h=>h.replace(/^"|"$/g,'').trim());
+  return lines.slice(1).map(line=>{
+    const vals=parseCSVRow(line);
+    const obj={};
+    headers.forEach((h,i)=>obj[h]=(vals[i]||'').replace(/^"|"$/g,'').trim());
+    return obj;
+  });
+}
+function mapRow(row){
+  const cursoRaw=row['Qual curso está participando hoje?']||'';
+  const cursoKey=CURSO_MAP[cursoRaw]||cursoRaw;
+  const estadoRaw=row['Selecione o seu estado']||'';
+  const estadoKey=ESTADO_MAP[estadoRaw]||estadoRaw;
+  const mm=(cursoKey.match(/^(\d{2})\/(\d{2})/)||[])[2]||'';
+  return {
+    e:estadoKey,
+    m:MES_MAP[mm]||'',
+    c:cursoKey,
+    p:row['Você é...']||'',
+    nps:parseInt(row['De 0 a 10 o quanto você indicaria esse curso para um amigo?'])||0,
+    ret:row['Já participou de outros cursos conosco anteriormente?']||'',
+    int:row['Teria interesse em participar de outro evento conosco?']||'',
+    niv:row['Qual o seu nível com a Terapia Capilar']||'',
+    nom:(row['Nome Completo:']||row['Nome Completo']||'').trim(),
+    sug:(row['Você tem alguma SUGESTÃO ou COMENTÁRIO para nos ajudar a melhorar?']||'').trim(),
+  };
+}
+async function loadSheetData(){
+  const overlay=document.getElementById('loading-overlay');
+  overlay.style.display='flex';
+  try {
+    // Busca NPS e inscritos em paralelo para carregar mais rápido
+    const [npsResult] = await Promise.allSettled([
+      fetch(SHEET_CSV_URL).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); }),
+      loadEnrollmentData(),
+      loadFollowupData()
+    ]);
+    if(npsResult.status==='fulfilled'){
+      const text=npsResult.value.replace(/^﻿/,'');
+      ALL=parseCSV(text).map(mapRow).filter(r=>r.c&&r.e&&r.nps>0);
+    }
+    overlay.style.display='none';
+    // Atualiza badge com data/hora do carregamento
+    const now=new Date();
+    const dd=String(now.getDate()).padStart(2,'0');
+    const mm=String(now.getMonth()+1).padStart(2,'0');
+    const yyyy=now.getFullYear();
+    const hh=String(now.getHours()).padStart(2,'0');
+    const mi=String(now.getMinutes()).padStart(2,'0');
+    document.getElementById('badge-update').textContent=`Atualizado: ${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+    updateAll();
+  } catch(err){
+    console.error('Erro ao carregar planilha:',err);
+    overlay.innerHTML='<div style="text-align:center;padding:24px"><div style="font-size:1.1rem;font-weight:700;color:#e73a57;margin-bottom:8px">Erro ao carregar dados</div><div style="font-size:.8rem;color:#c4b8b9;margin-bottom:16px">Verifique se a planilha está compartilhada como<br><b>"Qualquer pessoa com o link pode ver"</b></div><button onclick="loadSheetData()" style="padding:8px 18px;border-radius:8px;border:none;background:#7c6af7;color:#fff;cursor:pointer;font-size:.85rem">Tentar novamente</button></div>';
+  }
+}
+
+
+const CURSOS_ORDER = [
+  '09/03 · SP','16/03 · Online',
+  '23/03 · RJ — Adriano','23/03 · RS — Anderson','23/03 · SP — Beto',
+  '30/03 · RJ — Michele Souza','30/03 · RS — Mariana Compagnoni','30/03 · SP — Ana Paula Soares',
+  '27/04 · RJ — Virginia Nascimento','27/04 · RS — Anderson Claro','27/04 · SP — Beto, Dani, Luiza e Paula',
+  '04/05 · SP — Encontro Toctus c/ Hellen Anício',
+  '11/05 · SP — Terapia Capilar c/ Ana Soares','11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi',
+  '18/05 · RS — Terapia Capilar c/ Gheuri Zangelmi',
+  '25/05 · SP — Art of Color (Balens)','25/05 · RJ — Art of Color (Balens)',
+  '08/06 · RJ — Patologias & Protocolos','08/06 · SP — Patologias & Protocolos'
+];
+const CURSOS_LABELS = [
+  '09/03 SP','16/03 Online','23/03 RJ-Adriano','23/03 RS-Anderson','23/03 SP-Beto',
+  '30/03 RJ-Michele','30/03 RS-Mariana','30/03 SP-AnaPaula',
+  '27/04 RJ-Virginia','27/04 RS-Anderson','27/04 SP-Beto+',
+  '04/05 SP-Encontro','11/05 SP-AnaSoares','11/05 RJ-Gheuri','18/05 RS-Gheuri',
+  '25/05 SP-ArtColor','25/05 RJ-ArtColor','08/06 RJ-Patol','08/06 SP-Patol'
+];
+const CURSOS_COLORS = [
+  '#7c6af7','#f7c26a','#f76a8c','#6af7c8','#7c6af7',
+  '#f76a8c','#6af7c8','#7c6af7',
+  '#f76a8c','#6af7c8','#7c6af7',
+  '#6ab0f7','#7c6af7','#f76a8c','#6af7c8',
+  '#f7c26a','#f76a8c','#6ab0f7','#7c6af7'
+];
+
+let ENROLLMENT = [
+  {c:'27/04 · RJ — Virginia Nascimento',             e:'RJ', m:'Abril', lbl:'27/04 RJ — Virginia',  inscritos:24, presentes:12, faltaram:12},
+  {c:'27/04 · RS — Anderson Claro',                   e:'RS', m:'Abril', lbl:'27/04 RS — Anderson',  inscritos:17, presentes:8,  faltaram:9},
+  {c:'27/04 · SP — Beto, Dani, Luiza e Paula',        e:'SP', m:'Abril', lbl:'27/04 SP — Beto+',     inscritos:30, presentes:16, faltaram:14},
+  {c:'04/05 · SP — Encontro Toctus c/ Hellen Anício', e:'SP', m:'Maio',  lbl:'04/05 SP — Encontro',  inscritos:29, presentes:17, faltaram:12},
+  {c:'11/05 · RJ — Terapia Capilar c/ Gheuri Zangelmi',      e:'RJ', m:'Maio',  lbl:'11/05 RJ — Gheuri',    inscritos:37, presentes:27, faltaram:10},
+  {c:'11/05 · SP — Terapia Capilar c/ Ana Soares',           e:'SP', m:'Maio',  lbl:'11/05 SP — Protocol&Profit', inscritos:43, presentes:25, faltaram:18},
+  {c:'18/05 · RS — Terapia Capilar c/ Gheuri Zangelmi',     e:'RS', m:'Maio',  lbl:'18/05 RS — Terapia Capilar', inscritos:24, presentes:15, faltaram:9},
+  {c:'25/05 · SP — Art of Color (Balens)', e:'SP', m:'Maio', lbl:'25/05 SP — Art of Color', inscritos:18, presentes:11, faltaram:7},
+  {c:'25/05 · RJ — Art of Color (Balens)', e:'RJ', m:'Maio', lbl:'25/05 RJ — Art of Color', inscritos:21, presentes:9,  faltaram:8},
+];
+
+// ─────────────────────────────────────────────
+// PÓS-CURSO — carregado dinamicamente, aba por evento
+// p: false = não compareceu | true = compareceu
+// ─────────────────────────────────────────────
+let FOLLOWUP = [];
+
+const FOLLOWUP_SHEET_ID = '1MXnrf3xs2PVmvQ0xbxWhHKnNS2k2kt1oJuVSHOtljkM';
+
+// Uma entrada por aba da planilha de pós-curso.
+// e_default: estado fallback quando a coluna Estado estiver vazia na linha.
+// Adicione novos eventos abaixo conforme forem criados na planilha:
+const FOLLOWUP_EVENTS = [
+  {sheet:'Balens Art of Colors - 23/03',                     e_default:'',   m:'Março'},
+  {sheet:'Encontro Toctus - 30/03',                          e_default:'',   m:'Março'},
+  {sheet:'Inscritos - Balens Art of Colors - 27/04',         e_default:'RJ', m:'Abril'},
+  {sheet:'Inscritos - Encontro Toctus - 04/05 (SP)',         e_default:'SP', m:'Maio'},
+  {sheet:'Inscritos - Terapia Capilar (RJ) 11/05',           e_default:'RJ', m:'Maio'},
+  {sheet:'Inscritos - Protocol & Profit (SP) 11/05',         e_default:'SP', m:'Maio'},
+  {sheet:'Inscritos - Terapia Capilar (RS) 18/05',           e_default:'RS', m:'Maio'},
+  {sheet:'Inscritos - 25/05 (SP) Art of Color (Balens)',  e_default:'SP', m:'Maio'},
+  {sheet:'Inscritos - 25/05 (RJ) Art of Color (Balens)',  e_default:'RJ', m:'Maio'},
+  {sheet:'Inscritos - 08/06 (RJ) Patologias & Protocolos',e_default:'RJ', m:'Junho'},
+  {sheet:'Inscritos - 08/06 (SP) Patologias & Protocolos',e_default:'SP', m:'Junho'},
+];
+
+async function fetchOneFollowupSheet(ev){
+  try {
+    const base=`https://docs.google.com/spreadsheets/d/${FOLLOWUP_SHEET_ID}/gviz/tq?tqx=out:csv`;
+    const url=ev.sheet ? base+'&sheet='+encodeURIComponent(ev.sheet) : base;
+    const res=await fetch(url);
+    if(!res.ok) return [];
+    const raw=(await res.text()).replace(/^﻿/,'');
+    if(raw.trim().startsWith('<')) return [];
+    const lines=raw.replace(/\r/g,'').split('\n').filter(l=>l.trim());
+    if(lines.length<2) return [];
+
+    const headers=parseCSVRow(lines[0]).map(h=>h.replace(/^"|"$/g,'').trim());
+    const col=(...keys)=>headers.find(h=>keys.some(k=>h.toLowerCase().includes(k.toLowerCase())))||'';
+    const COL_ESTADO   = col('estado');
+    const COL_PRESENTE = col('presente');
+    const COL_MOTIVO   = col('impediu');
+    const COL_RET      = headers.find(h=>h.toLowerCase().includes('interesse')&&!h.toLowerCase().includes('evoluir'))||'';
+    const COL_APLICOU  = col('aplicar');
+    const COL_CONSTANCIA = col('constânc','constanc');
+    const COL_MUDOU    = col('mudou');
+    const COL_SEGURANCA = col('seguran');
+    const DOR_COLS   = headers.filter(h=>h.toLowerCase().includes('dor'));
+    const EVOL_COLS  = headers.filter(h=>h.toLowerCase().includes('evoluir'));
+
+    const rows=[];
+    lines.slice(1).forEach(line=>{
+      const vals=parseCSVRow(line);
+      const obj={};
+      headers.forEach((h,i)=>obj[h]=(vals[i]||'').replace(/^"|"$/g,'').trim());
+
+      const estadoRaw=(obj[COL_ESTADO]||'').trim();
+      const e=ESTADO_MAP[estadoRaw]||estadoRaw||ev.e_default;
+      if(!e) return;
+
+      const presRaw=(obj[COL_PRESENTE]||'').trim().toUpperCase();
+      if(!presRaw) return;
+      const p=presRaw==='OK'||presRaw==='SIM';
+
+      const dor    =DOR_COLS.map(c=>obj[c]||'').find(v=>v)||'';
+      const evoluir=EVOL_COLS.map(c=>obj[c]||'').find(v=>v)||'';
+
+      rows.push({
+        e, p,
+        motivo:     obj[COL_MOTIVO]||'',
+        ret:        obj[COL_RET]||'',
+        dor, evoluir,
+        aplicou:    obj[COL_APLICOU]||'',
+        constancia: obj[COL_CONSTANCIA]||'',
+        mudou:      obj[COL_MUDOU]||'',
+        seguranca:  obj[COL_SEGURANCA]||'',
+      });
+    });
+    return rows;
+  } catch(err){ console.warn('[Followup] erro em',ev.sheet||'(default)',err); return []; }
+}
+
+async function loadFollowupData(){
+  const results=await Promise.allSettled(FOLLOWUP_EVENTS.map(fetchOneFollowupSheet));
+  FOLLOWUP.length=0;
+
+  // Deduplicação: só deduplica linhas COM conteúdo (linhas vazias são ignoradas no display).
+  const seen=new Set();
+  results.forEach(r=>{
+    if(r.status!=='fulfilled') return;
+    r.value.forEach(row=>{
+      const content=row.motivo||row.ret||row.dor||row.evoluir||row.aplicou||'';
+      if(content){
+        const key=`${row.e}|${row.p}|${content.substring(0,30)}`;
+        if(seen.has(key)) return;
+        seen.add(key);
+      }
+      FOLLOWUP.push(row);
+    });
+  });
+  console.log('[Followup] carregados:',FOLLOWUP.length,'| presentes:',FOLLOWUP.filter(r=>r.p).length,'| ausentes:',FOLLOWUP.filter(r=>!r.p).length);
+}
+
+// ─────────────────────────────────────────────
+// INSCRITOS DINÂMICO — planilha de inscritos por evento
+// ─────────────────────────────────────────────
+const ENROLLMENT_SHEET_ID = '1I6amIV9LMAI_NZe-W96CmcSLngBs1zxpoXnF2ZrgJhI';
+
+// Adicione novos eventos aqui: o campo "sheet" deve ser o nome exato da aba na planilha
+const ENROLLMENT_EVENTS = [
+  {sheet:'25/05 (SP) Art of Light (Balens)', c:'25/05 · SP — Art of Color (Balens)', e:'SP', m:'Maio', lbl:'25/05 SP — Art of Color'},
+  {sheet:'25/05 (RJ) Art of Light (Balens)', c:'25/05 · RJ — Art of Color (Balens)', e:'RJ', m:'Maio', lbl:'25/05 RJ — Art of Color'},
+  {sheet:'08/06 RJ Patologias & Protocolos', c:'08/06 · RJ — Patologias & Protocolos', e:'RJ', m:'Junho', lbl:'08/06 RJ — Patologias'},
+  {sheet:'08/06 SP Patologias & Protocolos', c:'08/06 · SP — Patologias & Protocolos', e:'SP', m:'Junho', lbl:'08/06 SP — Patologias'},
+  // Adicione novos eventos abaixo conforme forem criados na planilha:
+  // {sheet:'NOME EXATO DA ABA', c:'dd/mm · UF — Nome', e:'SP', m:'Mês', lbl:'dd/mm UF — Nome'},
+];
+
+async function fetchOneEnrollmentSheet(ev){
+  try {
+    const url=`https://docs.google.com/spreadsheets/d/${ENROLLMENT_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(ev.sheet)}`;
+    const res=await fetch(url);
+    if(!res.ok) return null;
+    const text=(await res.text()).replace(/^﻿/,'');
+    if(text.trim().startsWith('<')) return null;
+    const rows=parseCSV(text).filter(r=>(r['Nome']||'').trim());
+    if(!rows.length) return null;
+    const inscritos=rows.length;
+    const presentes=rows.filter(r=>(r['PRESENÇA']||'').trim().toUpperCase()==='SIM').length;
+    const nao=rows.filter(r=>(r['PRESENÇA']||'').trim().toUpperCase()==='NÃO').length;
+    // hasAttendance: true apenas quando presença foi efetivamente registrada
+    const hasAttendance = presentes > 0 || nao > 0;
+    const faltaram = hasAttendance ? (nao > 0 ? nao : Math.max(0, inscritos - presentes)) : 0;
+    return {...ev, inscritos, presentes: hasAttendance ? presentes : 0, faltaram, hasAttendance};
+  } catch(e){ return null; }
+}
+
+async function loadEnrollmentData(){
+  const results=await Promise.allSettled(ENROLLMENT_EVENTS.map(fetchOneEnrollmentSheet));
+  results.forEach(r=>{
+    if(r.status!=='fulfilled'||!r.value) return;
+    const v=r.value;
+    const idx=ENROLLMENT.findIndex(e=>e.c===v.c);
+    if(idx>=0) ENROLLMENT[idx]=v; else ENROLLMENT.push(v);
+  });
+}
+
+
+// ─────────────────────────────────────────────
+// FILTER STATE
+// ─────────────────────────────────────────────
+const F = {estado:new Set(), mes:new Set(), curso:new Set()};
+
+function getFiltered(){
+  return ALL.filter(r=>
+    (!F.estado.size||F.estado.has(r.e))&&
+    (!F.mes.size||F.mes.has(r.m))&&
+    (!F.curso.size||F.curso.has(r.c))
+  );
+}
+
+// ─────────────────────────────────────────────
+// DROPDOWN LOGIC
+// ─────────────────────────────────────────────
+function toggleDrop(key){
+  const drop=document.getElementById('fdrop-'+key);
+  const btn=document.getElementById('fbtn-'+key);
+  const isOpen=drop.classList.contains('open');
+  document.querySelectorAll('.fdrop').forEach(d=>d.classList.remove('open'));
+  document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('open'));
+  if(!isOpen){drop.classList.add('open');btn.classList.add('open');}
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.fgroup'))
+    document.querySelectorAll('.fdrop').forEach(d=>d.classList.remove('open'));
+});
+
+function fkey(g){ return g==='estado'?'estado':g==='mes'?'mes':'curso'; }
+
+function syncTodos(g){
+  const all=document.querySelector(`input[data-group="${g}"][data-all]`);
+  if(!all) return;
+  const items=[...document.querySelectorAll(`input[data-group="${g}"]:not([data-all])`)];
+  const checkedCount=items.filter(s=>s.checked).length;
+  all.checked=checkedCount===items.length;
+  all.indeterminate=checkedCount>0&&checkedCount<items.length;
+}
+
+document.querySelectorAll('input[data-group]').forEach(cb=>{
+  cb.addEventListener('change',()=>{
+    const g=cb.dataset.group;
+    const k=fkey(g);
+    if(cb.dataset.all){
+      const items=[...document.querySelectorAll(`input[data-group="${g}"]:not([data-all])`)];
+      items.forEach(s=>{ s.checked=cb.checked; cb.checked?F[k].add(s.value):F[k].delete(s.value); });
+    } else {
+      cb.checked?F[k].add(cb.value):F[k].delete(cb.value);
+      syncTodos(g);
+    }
+    updateBadge(g,k);
+    updateAll();
+  });
+});
+
+function updateBadge(g,k){
+  const badge=document.getElementById('badge-'+g);
+  const btn=document.getElementById('fbtn-'+g);
+  const n=F[k].size;
+  badge.textContent=n;
+  badge.style.display=n?'inline-block':'none';
+  btn.classList.toggle('has-sel',n>0);
+}
+
+function clearAll(){
+  F.estado.clear();F.mes.clear();F.curso.clear();
+  document.querySelectorAll('input[data-group]').forEach(cb=>{ cb.checked=false; cb.indeterminate=false; });
+  ['estado','mes','curso'].forEach(g=>{
+    document.getElementById('badge-'+g).style.display='none';
+    document.getElementById('fbtn-'+g).classList.remove('has-sel');
+  });
+  updateAll();
+}
+
+// ─────────────────────────────────────────────
+// CHARTS
+// ─────────────────────────────────────────────
+Chart.defaults.color='#c4b8b9';
+const C={};
+
+function mkChart(id,type,labels,data,colors,opts){
+  const ctx=document.getElementById(id).getContext('2d');
+  return new Chart(ctx,{type,data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:0,hoverOffset:6,borderRadius:type==='bar'?6:0,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,...opts}});
+}
+
+const donutOpts=(pos)=>({cutout:'62%',plugins:{legend:{position:pos,labels:{color:'#c4b8b9',font:{size:11},boxWidth:10,padding:10}},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw} (${ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0)?Math.round(ctx.raw/ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0)*100):0}%)`}}}});
+
+// ── Charts pós-curso & dores (inicializados vazios, atualizados em updateFollowup)
+const hBarOpts=()=>({
+  indexAxis:'y',responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw} menções`}}},
+  scales:{
+    x:{ticks:{color:'#c4b8b9',stepSize:1},grid:{color:'#3a3334'},beginAtZero:true,border:{display:false}},
+    y:{ticks:{color:'#c4b8b9',font:{size:11}},grid:{display:false},border:{display:false}}
+  }
+});
+C.motivos=new Chart(document.getElementById('chartMotivos').getContext('2d'),{
+  type:'bar',
+  data:{labels:[],datasets:[{data:[],backgroundColor:'#f76a8c',borderRadius:5,borderSkipped:false,borderWidth:0}]},
+  options:hBarOpts()
+});
+C.retornoFu=new Chart(document.getElementById('chartRetornoFu').getContext('2d'),{
+  type:'doughnut',
+  data:{labels:['Querem retornar','Não querem'],datasets:[{data:[0,0],backgroundColor:['#6af7c8','#f76a8c'],borderWidth:0,hoverOffset:6}]},
+  options:{...donutOpts('bottom'),responsive:true,maintainAspectRatio:false}
+});
+C.doresBar=new Chart(document.getElementById('chartDoresBar').getContext('2d'),{
+  type:'bar',
+  data:{labels:[],datasets:[{data:[],backgroundColor:'#7c6af7',borderRadius:5,borderSkipped:false,borderWidth:0}]},
+  options:hBarOpts()
+});
+C.evolBar=new Chart(document.getElementById('chartEvolBar').getContext('2d'),{
+  type:'bar',
+  data:{labels:[],datasets:[{data:[],backgroundColor:'#f7c26a',borderRadius:5,borderSkipped:false,borderWidth:0}]},
+  options:hBarOpts()
+});
+
+C.perfil=mkChart('chartPerfil','doughnut',
+  ['Cabeleireiro','Dono Salão + Cab.','Dono de Salão','Terapeuta Capilar','Auxiliar','Outros'],
+  [0,0,0,0,0,0],
+  ['#7c6af7','#f76a8c','#6ab0f7','#6af7c8','#f7c26a','#f7976a'],
+  donutOpts('right')
+);
+C.estado=mkChart('chartEstado','doughnut',
+  ['São Paulo','Rio de Janeiro','Rio Grande do Sul'],
+  [0,0,0],['#7c6af7','#f76a8c','#6af7c8'],donutOpts('bottom')
+);
+C.retorno=mkChart('chartRetorno','doughnut',
+  ['1ª participação','Já participou antes'],
+  [0,0],['#6ab0f7','#f7c26a'],donutOpts('bottom')
+);
+C.interesse=mkChart('chartInteresse','doughnut',
+  ['Sim','Prefiro não opinar','Não'],
+  [0,0,0],['#6af7c8','#f7c26a','#f76a8c'],donutOpts('bottom')
+);
+C.eventos=new Chart(document.getElementById('chartEventos').getContext('2d'),{
+  type:'bar',
+  data:{labels:CURSOS_LABELS,datasets:[{data:new Array(19).fill(0),backgroundColor:CURSOS_COLORS,borderRadius:6,borderSkipped:false,borderWidth:0}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw} respostas`}}},scales:{x:{ticks:{color:'#c4b8b9',font:{size:10}},grid:{color:'#5c5254'}},y:{ticks:{color:'#c4b8b9',stepSize:5},grid:{color:'#5c5254'},beginAtZero:true}}}
+});
+C.nivel=new Chart(document.getElementById('chartNivel').getContext('2d'),{
+  type:'bar',
+  data:{labels:['Iniciante','Intermediário','Formado','Avançado','Nenhum'],datasets:[{data:[0,0,0,0,0],backgroundColor:['#7c6af7','#6ab0f7','#6af7c8','#f7c26a','#f76a8c'],borderRadius:6,borderSkipped:false,borderWidth:0}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw} participantes`}}},scales:{x:{ticks:{color:'#c4b8b9'},grid:{color:'#5c5254'}},y:{ticks:{color:'#c4b8b9',stepSize:2},grid:{color:'#5c5254'},beginAtZero:true}}}
+});
+C.mes=new Chart(document.getElementById('chartMes').getContext('2d'),{
+  type:'line',
+  data:{labels:['Março','Abril','Maio','Junho'],datasets:[{data:[0,0,0,0],borderColor:'#7c6af7',backgroundColor:'rgba(124,106,247,.15)',tension:.4,fill:true,pointBackgroundColor:'#7c6af7',pointRadius:5,pointHoverRadius:7,borderWidth:2}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw} respostas`}}},scales:{x:{ticks:{color:'#c4b8b9'},grid:{color:'#5c5254'}},y:{ticks:{color:'#c4b8b9',stepSize:20},grid:{color:'#5c5254'},beginAtZero:true}}}
+});
+C.presenca=new Chart(document.getElementById('chartPresenca').getContext('2d'),{
+  type:'bar',
+  data:{
+    labels:ENROLLMENT.map(r=>r.lbl),
+    datasets:[
+      {label:'Inscritos',data:ENROLLMENT.map(r=>r.inscritos),backgroundColor:'rgba(124,106,247,.75)',borderRadius:5,borderSkipped:false,borderWidth:0},
+      {label:'Presentes',data:ENROLLMENT.map(r=>r.presentes),backgroundColor:'rgba(106,247,200,.75)',borderRadius:5,borderSkipped:false,borderWidth:0},
+      {label:'Faltaram',data:ENROLLMENT.map(r=>r.faltaram),backgroundColor:'rgba(231,58,87,.75)',borderRadius:5,borderSkipped:false,borderWidth:0}
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{color:'#c4b8b9',font:{size:11},boxWidth:12,padding:14}},tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.raw}`}}},scales:{x:{ticks:{color:'#c4b8b9',font:{size:11}},grid:{color:'#5c5254'}},y:{ticks:{color:'#c4b8b9',stepSize:5},grid:{color:'#5c5254'},beginAtZero:true}}}
+});
+
+// ─────────────────────────────────────────────
+// QUOTES DINÂMICOS — classificação e renderização
+// ─────────────────────────────────────────────
+const PILL_CLASS = {SP:'pill-sp',RJ:'pill-rj',RS:'pill-rs'};
+const EDUCAT_KW = ['anderson','adriano','beto','michele','mariana','mari ','virginia','hellen','ana soares','ana paula','gheuri','luiza','erick','rose','rosmary'];
+const SUGEST_KW = ['melhorar','falta','faltou','poderia','gostaria','seria interessante','seria legal','mais tempo','mais pratica','mais cursos','acho que','campo de visao','aumentar','reduzir','menor','carga horaria','tricoscopia','formacao','treinamento','brinde','secador'];
+const POSIT_KW  = ['amei','adorei','otimo','otima','excelente','maravilhoso','maravilhosa','incrivel','perfeito','perfeita','fantastico','parabens','muito bom','muito boa','lindo','linda','top','amo','maravilha','simplesmente','encantou','encantad','completo','completa','enriquecedor','acolhedor','acolhida','obrigada','gratidao','superou'];
+
+function classifyComment(text){
+  const t=normTxt(text);
+  if(EDUCAT_KW.some(k=>t.includes(normTxt(k)))) return 'equipe';
+  if(SUGEST_KW.some(k=>t.includes(normTxt(k)))) return 'sugestoes';
+  if(POSIT_KW.some(k=>t.includes(normTxt(k)))) return 'destaques';
+  return text.includes('!')||text.includes('❤')||text.includes('🥰') ? 'destaques' : 'sugestoes';
+}
+
+function renderDynamicQuotes(){
+  const d=getFiltered().filter(r=>r.sug&&r.sug.length>5);
+  const groups={sugestoes:[],destaques:[],equipe:[]};
+  d.forEach(r=>{ const cat=classifyComment(r.sug); groups[cat].push(r); });
+
+  const COLOR_CLS={sugestoes:'orange',destaques:'green',equipe:'purple'};
+  const NO_MSG={sugestoes:'Nenhuma sugestão para os filtros selecionados.',destaques:'Nenhum destaque para os filtros selecionados.',equipe:'Nenhum elogio para os filtros selecionados.'};
+
+  ['sugestoes','destaques','equipe'].forEach(tab=>{
+    const grid=document.getElementById('quotes-grid-'+tab);
+    const noEl=document.getElementById('no-'+tab);
+    if(!grid) return;
+    grid.innerHTML='';
+    const items=groups[tab];
+    if(!items.length){
+      if(noEl){noEl.textContent=NO_MSG[tab];noEl.style.display='block';}
+      return;
+    }
+    if(noEl) noEl.style.display='none';
+    const cc=COLOR_CLS[tab];
+    items.forEach(r=>{
+      const pc=PILL_CLASS[r.e]||'pill-on';
+      // Label curto: "25/05 · SP" a partir da chave completa
+      const lbl=r.c.split('—')[0].trim();
+      const wrap=document.createElement('div');
+      wrap.innerHTML=`<div class="quote-card ${cc}"><div class="quote-meta"><span class="qpill ${pc}">${lbl}</span><span class="qname">${r.nom||r.e}</span></div><p class="quote-text">"${r.sug}"</p></div>`;
+      grid.appendChild(wrap);
+    });
+  });
+}
+
+// ─────────────────────────────────────────────
+// UPDATE ALL
+// ─────────────────────────────────────────────
+function updateAll(){
+  const d=getFiltered();
+  const n=d.length;
+
+  // KPIs
+  document.getElementById('kpi-total').textContent=n;
+  document.getElementById('fi-count').textContent=n;
+  const evtCount=new Set(d.map(r=>r.c)).size;
+  document.getElementById('kpi-eventos-sub').textContent=evtCount+' eventos';
+  const avgNPS=n?+(d.reduce((s,r)=>s+r.nps,0)/n).toFixed(2):0;
+  document.getElementById('kpi-nps').textContent=avgNPS.toFixed(2);
+  const simI=d.filter(r=>r.int==='Sim').length;
+  document.getElementById('kpi-interesse').textContent=n?Math.round(simI/n*100)+'%':'—';
+  document.getElementById('kpi-interesse-sub').textContent=n?`${simI} de ${n} participantes`:'';
+  const simR=d.filter(r=>r.ret==='Sim').length;
+  document.getElementById('kpi-retorno').textContent=n?Math.round(simR/n*100)+'%':'—';
+  document.getElementById('kpi-retorno-sub').textContent=n?`${simR} participantes recorrentes`:'';
+  // Satisfaction tab KPI mirrors
+  document.getElementById('kpi-sat-total').textContent=n;
+  document.getElementById('kpi-sat-nps').textContent=avgNPS.toFixed(2);
+  document.getElementById('kpi-sat-interesse').textContent=n?Math.round(simI/n*100)+'%':'—';
+  document.getElementById('kpi-sat-retorno').textContent=n?Math.round(simR/n*100)+'%':'—';
+  const estados=new Set(d.map(r=>r.e));
+  document.getElementById('kpi-estados').textContent=estados.size||'—';
+
+  // NPS gauge
+  const s10=d.filter(r=>r.nps===10).length;
+  const s9=d.filter(r=>r.nps===9).length;
+  const s8=d.filter(r=>r.nps===8).length;
+  const pct=n?Math.round(avgNPS/10*100):0;
+  document.getElementById('nps-circle').style.background=
+    `conic-gradient(#6af7c8 0% ${pct}%, var(--border) ${pct}%)`;
+  document.getElementById('nps-score').textContent=n?avgNPS.toFixed(2):'—';
+  document.getElementById('nps-bar-10').style.width=(n?s10/n*100:0)+'%';
+  document.getElementById('nps-count-10').textContent=s10;
+  document.getElementById('nps-bar-9').style.width=(n?s9/n*100:0)+'%';
+  document.getElementById('nps-count-9').textContent=s9;
+  document.getElementById('nps-bar-8').style.width=(n?s8/n*100:0)+'%';
+  document.getElementById('nps-count-8').textContent=s8;
+
+  // Charts
+  const perfilKeys=['Cabeleireiro','Dono de Salão e Cabeleireiro','Dono de Salão','Terapeuta Capilar','Auxiliar','Outros'];
+  C.perfil.data.datasets[0].data=perfilKeys.map(k=>d.filter(r=>r.p===k).length);
+  C.perfil.update();
+  C.estado.data.datasets[0].data=['SP','RJ','RS'].map(k=>d.filter(r=>r.e===k).length);
+  C.estado.update();
+  C.retorno.data.datasets[0].data=[d.filter(r=>r.ret==='Não').length,d.filter(r=>r.ret==='Sim').length];
+  C.retorno.update();
+  C.interesse.data.datasets[0].data=[simI,d.filter(r=>r.int==='Prefiro não opinar').length,d.filter(r=>r.int==='Não').length];
+  C.interesse.update();
+  C.eventos.data.datasets[0].data=CURSOS_ORDER.map(k=>d.filter(r=>r.c===k).length);
+  C.eventos.update();
+  C.nivel.data.datasets[0].data=['Iniciante','Intermediario','Formado','Avançado','Nenum conhecimento'].map(k=>d.filter(r=>r.niv===k).length);
+  C.nivel.update();
+  C.mes.data.datasets[0].data=['Março','Abril','Maio','Junho'].map(k=>d.filter(r=>r.m===k).length);
+  C.mes.update();
+
+  // Table — visibilidade + atualiza contagem e NPS por evento
+  document.querySelectorAll('#evt-tbody tr').forEach(tr=>{
+    const te=tr.dataset.estado, tm=tr.dataset.mes, tc=tr.dataset.curso;
+    const show=
+      (!F.estado.size||F.estado.has(te))&&
+      (!F.mes.size||F.mes.has(tm))&&
+      (!F.curso.size||F.curso.has(tc));
+    tr.classList.toggle('hidden-row',!show);
+    // Atualiza contagem e NPS dinamicamente
+    const evtData=ALL.filter(r=>r.c===tc);
+    const cells=tr.querySelectorAll('td');
+    if(cells[3]) cells[3].textContent=evtData.length;
+    if(cells[4]&&evtData.length){
+      const avg=evtData.reduce((s,r)=>s+r.nps,0)/evtData.length;
+      cells[4].textContent=avg.toFixed(1).replace('.',',');
+    }
+  });
+
+  // Enrollment / Presença
+  const fe=ENROLLMENT.filter(r=>
+    (!F.estado.size||F.estado.has(r.e))&&
+    (!F.mes.size||F.mes.has(r.m))&&
+    (!F.curso.size||F.curso.has(r.c))
+  );
+  const totInsc=fe.reduce((s,r)=>s+r.inscritos,0);
+  const feAtt=fe.filter(r=>r.hasAttendance!==false&&(r.presentes>0||r.faltaram>0));
+  const totPres=feAtt.reduce((s,r)=>s+r.presentes,0);
+  const totFalt=feAtt.reduce((s,r)=>s+r.faltaram,0);
+  const totInscAtt=feAtt.reduce((s,r)=>s+r.inscritos,0);
+  document.getElementById('kpi-inscritos').textContent=fe.length?totInsc:'—';
+  const kpiInscSub=document.getElementById('kpi-inscritos-sub');
+  if(kpiInscSub) kpiInscSub.textContent=fe.length?`em ${fe.length} evento${fe.length>1?'s':''}`:'em todos os eventos';
+  document.getElementById('kpi-presentes').textContent=feAtt.length?totPres:'—';
+  document.getElementById('kpi-presentes-sub').textContent=feAtt.length?`de ${totInscAtt} com presença`:'';
+  document.getElementById('kpi-taxa').textContent=(feAtt.length&&totInscAtt)?Math.round(totPres/totInscAtt*100)+'%':'—';
+  document.getElementById('kpi-faltaram').textContent=feAtt.length?totFalt:'—';
+  document.getElementById('kpi-faltaram-sub').textContent=feAtt.length?`de ${totInscAtt} com presença`:'';
+  const nSemPres=fe.filter(r=>!r.hasAttendance&&r.presentes===0&&r.faltaram===0).length;
+  const sub=document.getElementById('presenca-subtitle');
+  if(sub) sub.textContent=nSemPres>0?`(${nSemPres} evento${nSemPres>1?'s':''} sem presença registrada)`:'';
+  C.presenca.data.labels=fe.map(r=>r.lbl);
+  C.presenca.data.datasets[0].data=fe.map(r=>r.inscritos);
+  C.presenca.data.datasets[1].data=fe.map(r=>r.presentes);
+  C.presenca.data.datasets[2].data=fe.map(r=>r.faltaram);
+  C.presenca.update();
+
+  // Pós-Curso
+  updateFollowup();
+
+  // Quotes dinâmicos da planilha
+  renderDynamicQuotes();
+}
+
+// ─────────────────────────────────────────────
+// PÓS-CURSO
+// ─────────────────────────────────────────────
+const KEYWORDS_DOR = ['marketing','financeiro','precificação','precificacao','gestão','gestao','equipe','corte','mechas','colorimetria','constância','constancia','cliente','produto','técnica','tecnica','terapia capilar','vendas','atendimento'];
+const KEYWORDS_EVOL = ['marketing','financeiro','precificação','precificacao','gestão','gestao','terapia capilar','mechas','corte','colorimetria','vendas','equipe','técnica','tecnica'];
+const KEYWORDS_MOTIVO = ['saúde','doença','acidente','hospital','mal estar','virose','acamada','locomoção','distância','transporte','carro','trabalho','compromisso','agenda','horário','pessoal','particular','familiar','financeiro','viagem','esqueceu'];
+
+function normTxt(t){return t.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();}
+
+function countKeywords(texts, keys){
+  const cnt={};
+  texts.forEach(t=>{
+    const tn=normTxt(t);
+    keys.forEach(k=>{ if(tn.includes(normTxt(k))) cnt[k]=(cnt[k]||0)+1; });
+  });
+  return Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
+}
+
+function renderFuTags(elId, texts, color, keys){
+  const el=document.getElementById(elId);
+  el.innerHTML='';
+  const pairs=countKeywords(texts,keys);
+  if(!pairs.length){
+    // show full texts as small tags
+    texts.slice(0,12).forEach(t=>{
+      const span=document.createElement('span');
+      span.className='fu-tag';
+      span.style.cssText=`background:${color}18;color:${color};`;
+      span.textContent=t.length>50?t.substring(0,48)+'…':t;
+      el.appendChild(span);
+    });
+    return;
+  }
+  pairs.forEach(([kw,cnt])=>{
+    const span=document.createElement('span');
+    span.className='fu-tag';
+    span.style.cssText=`background:${color}18;color:${color};`;
+    const badge=document.createElement('span');
+    badge.className='fu-tag-count';
+    badge.style.cssText=`background:${color}35;`;
+    badge.textContent=cnt;
+    span.textContent=kw.charAt(0).toUpperCase()+kw.slice(1)+' ';
+    span.appendChild(badge);
+    el.appendChild(span);
+  });
+}
+
+function renderFuQuote(txt, cor, meta){
+  const d=document.createElement('div');
+  d.className='fu-quote';
+  d.style.cssText=`background:${cor}10;border-left-color:${cor};color:var(--text);`;
+  d.innerHTML=`"${txt}"${meta?`<div class="fu-quote-meta">${meta}</div>`:''}`;
+  return d;
+}
+
+function updateFollowup(){
+  const fu=FOLLOWUP.filter(r=>!F.estado.size||F.estado.has(r.e));
+  const nao=fu.filter(r=>!r.p&&(r.motivo||r.ret||r.dor||r.evoluir));
+  const foi=fu.filter(r=>r.p&&(r.dor||r.evoluir||r.aplicou));
+
+  // KPIs
+  const retSim=nao.filter(r=>normTxt(r.ret||'').startsWith('s'));
+  const aplicList=foi.filter(r=>r.aplicou&&!normTxt(r.aplicou).startsWith('n'));
+  document.getElementById('fu-nao-resp').textContent=nao.length||'—';
+  document.getElementById('fu-retorno').textContent=nao.length?Math.round(retSim.length/nao.length*100)+'%':'—';
+  document.getElementById('fu-comp-resp').textContent=foi.length||'—';
+  document.getElementById('fu-aplicou-pct').textContent=foi.length?aplicList.length+'/'+foi.length:'—';
+
+  // Motivos
+  const motivosEl=document.getElementById('fu-motivos');
+  motivosEl.innerHTML='';
+  const motivos=nao.filter(r=>r.motivo);
+  document.getElementById('fu-motivos-empty').style.display=motivos.length?'none':'block';
+  motivos.forEach(r=>motivosEl.appendChild(renderFuQuote(r.motivo,'#e73a57',r.e)));
+
+  // Interesse em retornar — barra visual
+  const retVis=document.getElementById('fu-retorno-vis');
+  if(nao.length){
+    const pct=Math.round(retSim.length/nao.length*100);
+    retVis.innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="flex:1;background:var(--border);border-radius:4px;height:12px;overflow:hidden"><div style="width:${pct}%;height:100%;background:#6af7c8;border-radius:4px"></div></div><span style="font-size:.85rem;font-weight:700;color:#6af7c8">${pct}%</span></div><span style="font-size:.72rem;color:var(--muted)">${retSim.length} de ${nao.length} respondentes querem participar novamente</span>`;
+  }
+  // Frases de interesse
+  const retTagsEl=document.getElementById('fu-retorno-tags');
+  retTagsEl.innerHTML='';
+  document.getElementById('fu-retorno-empty').style.display=nao.filter(r=>r.ret).length?'none':'block';
+  nao.filter(r=>r.ret).forEach(r=>{
+    const span=document.createElement('span');
+    span.className='fu-tag';
+    const retNorm=normTxt(r.ret||'');
+    const col=retNorm.startsWith('s')?'#6af7c8':'#e73a57';
+    span.style.cssText=`background:${col}18;color:${col};`;
+    span.textContent=r.ret.length>40?r.ret.substring(0,38)+'…':r.ret;
+    retTagsEl.appendChild(span);
+  });
+
+  // Dores do salão
+  const allDores=[...nao.map(r=>r.dor),...foi.map(r=>r.dor)].filter(Boolean);
+  document.getElementById('fu-dores-empty').style.display=allDores.length?'none':'block';
+  renderFuTags('fu-dores', allDores, '#7c6af7', KEYWORDS_DOR);
+  const doresQuotes=document.getElementById('fu-dores-quotes');
+  doresQuotes.innerHTML='';
+  allDores.filter(t=>t.length>30).slice(0,4).forEach(t=>doresQuotes.appendChild(renderFuQuote(t,'#7c6af7','')));
+
+  // Interesse em evoluir
+  const allEvol=[...nao.map(r=>r.evoluir),...foi.map(r=>r.evoluir)].filter(Boolean);
+  document.getElementById('fu-evoluir-empty').style.display=allEvol.length?'none':'block';
+  renderFuTags('fu-evoluir', allEvol, '#f7c26a', KEYWORDS_EVOL);
+  const evolQuotes=document.getElementById('fu-evoluir-quotes');
+  evolQuotes.innerHTML='';
+  allEvol.filter(t=>t.length>30).slice(0,4).forEach(t=>evolQuotes.appendChild(renderFuQuote(t,'#f7c26a','')));
+
+  // Conseguiu aplicar
+  const aplicEl=document.getElementById('fu-aplicou-list');
+  aplicEl.innerHTML='';
+  document.getElementById('fu-aplicou-empty').style.display=foi.filter(r=>r.aplicou).length?'none':'block';
+  foi.filter(r=>r.aplicou).forEach(r=>aplicEl.appendChild(renderFuQuote(r.aplicou,'#6af7c8',r.e)));
+
+  // ── Gráfico: Motivos de ausência
+  const motivoTexts=nao.map(r=>r.motivo).filter(Boolean);
+  let motivoPairs=countKeywords(motivoTexts,KEYWORDS_MOTIVO).slice(0,7);
+  // fallback: se nenhum keyword bateu, agrupa por texto direto
+  if(!motivoPairs.length){
+    const mc={};
+    motivoTexts.forEach(t=>{ const k=normTxt(t).substring(0,40); if(!mc[k])mc[k]={lbl:t,n:0}; mc[k].n++; });
+    motivoPairs=Object.values(mc).sort((a,b)=>b.n-a.n).slice(0,7).map(r=>[r.lbl,r.n]);
+  }
+  const hasMotivos=motivoPairs.length>0;
+  document.getElementById('chartMotivos-empty').style.display=hasMotivos?'none':'block';
+  document.getElementById('chartMotivos').style.display=hasMotivos?'block':'none';
+  C.motivos.data.labels=motivoPairs.map(([k])=>k.charAt(0).toUpperCase()+k.slice(1));
+  C.motivos.data.datasets[0].data=motivoPairs.map(([,v])=>v);
+  C.motivos.update();
+
+  // ── Gráfico: Interesse em retornar (donut)
+  C.retornoFu.data.datasets[0].data=[retSim.length,Math.max(0,nao.length-retSim.length)];
+  C.retornoFu.update();
+
+  // ── Gráficos: Dores & Evoluir (barras horizontais)
+  const doresKws=countKeywords(allDores,KEYWORDS_DOR).slice(0,8);
+  const hasDoresChart=doresKws.length>0;
+  document.getElementById('chartDoresBar-empty').style.display=hasDoresChart?'none':'block';
+  document.getElementById('chartDoresBar').style.display=hasDoresChart?'block':'none';
+  C.doresBar.data.labels=doresKws.map(([k])=>k.charAt(0).toUpperCase()+k.slice(1));
+  C.doresBar.data.datasets[0].data=doresKws.map(([,v])=>v);
+  C.doresBar.update();
+
+  const evolKws=countKeywords(allEvol,KEYWORDS_EVOL).slice(0,8);
+  const hasEvolChart=evolKws.length>0;
+  document.getElementById('chartEvolBar-empty').style.display=hasEvolChart?'none':'block';
+  document.getElementById('chartEvolBar').style.display=hasEvolChart?'block':'none';
+  C.evolBar.data.labels=evolKws.map(([k])=>k.charAt(0).toUpperCase()+k.slice(1));
+  C.evolBar.data.datasets[0].data=evolKws.map(([,v])=>v);
+  C.evolBar.update();
+}
+
+// ── PAGE TABS ────────────────────────────────
+function switchPageTab(tabId) {
+  document.querySelectorAll('.page-tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.page === tabId)
+  );
+  document.querySelectorAll('.page-panel').forEach(p =>
+    p.classList.toggle('active', p.id === 'page-' + tabId)
+  );
+  // Re-renderiza charts no painel ativo
+  setTimeout(() => {
+    Object.values(C).forEach(chart => {
+      try { chart.resize(); } catch(e) {}
+    });
+  }, 50);
+}
+
+document.querySelectorAll('.page-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchPageTab(btn.dataset.page));
+});
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.style.display='none');
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).style.display='block';
+  });
+});
+
+// Init — carrega dados da planilha e renderiza
+loadSheetData();
+</script>
+</body>
+</html>

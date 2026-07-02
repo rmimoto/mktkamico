@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard – The Smooth Edit | Feedback Consultores</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #f5f4f0;
+      --card: #ffffff;
+      --accent: #2c2c2c;
+      --gold: #b08d57;
+      --gold-light: #d4aa70;
+      --red: #c0392b;
+      --green: #27ae60;
+      --blue: #2980b9;
+      --soft: #7f8c8d;
+      --border: #e0ddd6;
+      --tag-bg: #f0ede6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--accent);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ─────────────────────────────────────── */
+    header {
+      background: var(--accent);
+      color: #fff;
+      padding: 28px 40px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      border-bottom: 4px solid var(--gold);
+    }
+    header .brand { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--gold-light); }
+    header h1 { font-size: 22px; font-weight: 700; letter-spacing: .5px; }
+    header p  { font-size: 13px; color: #bbb; margin-top: 3px; }
+    .header-info { margin-left: auto; text-align: right; font-size: 12px; color: #aaa; line-height: 1.6; }
+
+    /* ── LAYOUT ─────────────────────────────────────── */
+    main { max-width: 1300px; margin: 0 auto; padding: 32px 24px 60px; }
+    .section-title {
+      font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--gold); font-weight: 700; margin: 40px 0 16px;
+      padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    }
+    .grid { display: grid; gap: 20px; }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .col-span-2 { grid-column: span 2; }
+
+    /* ── CARDS ──────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 22px 24px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .card-title {
+      font-size: 12px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--soft);
+      margin-bottom: 14px;
+    }
+
+    /* ── KPI CARDS ──────────────────────────────────── */
+    .kpi { text-align: center; }
+    .kpi .num { font-size: 46px; font-weight: 800; line-height: 1; color: var(--accent); }
+    .kpi .num.gold { color: var(--gold); }
+    .kpi .num.green { color: var(--green); }
+    .kpi .num.red { color: var(--red); }
+    .kpi .label { font-size: 12px; color: var(--soft); margin-top: 6px; line-height: 1.4; }
+
+    /* ── CHART WRAPPERS ─────────────────────────────── */
+    .chart-wrap { position: relative; }
+    .chart-wrap canvas { max-height: 300px; }
+    .chart-wrap.tall canvas { max-height: 380px; }
+    .chart-wrap.short canvas { max-height: 220px; }
+
+    /* ── PROGRESS BARS ──────────────────────────────── */
+    .bar-list { display: flex; flex-direction: column; gap: 10px; }
+    .bar-item {}
+    .bar-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+    .bar-label span:first-child { color: var(--accent); font-weight: 500; }
+    .bar-label span:last-child  { color: var(--soft); font-size: 12px; }
+    .bar-track { height: 8px; background: var(--tag-bg); border-radius: 99px; overflow: hidden; }
+    .bar-fill   { height: 100%; border-radius: 99px; transition: width .6s ease; }
+    .fill-gold  { background: var(--gold); }
+    .fill-blue  { background: var(--blue); }
+    .fill-red   { background: var(--red); }
+    .fill-green { background: var(--green); }
+    .fill-soft  { background: #b0b8c1; }
+
+    /* ── QUALITATIVE ────────────────────────────────── */
+    .quotes-grid { display: grid; gap: 18px; grid-template-columns: repeat(2, 1fr); }
+    .quote-card {
+      background: var(--card);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--gold);
+      padding: 18px 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    }
+    .quote-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .quote-name { font-weight: 700; font-size: 13px; }
+    .quote-state {
+      font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      background: var(--tag-bg); color: var(--gold);
+      padding: 2px 7px; border-radius: 99px;
+    }
+    .quote-tag {
+      font-size: 10px; letter-spacing: .8px; text-transform: uppercase;
+      color: var(--soft); font-weight: 600; margin-bottom: 6px;
+    }
+    .quote-text { font-size: 13px; line-height: 1.65; color: #444; }
+
+    .insight-card {
+      background: var(--accent);
+      color: #fff;
+      border-radius: 10px;
+      padding: 20px 22px;
+      border: 1px solid #444;
+    }
+    .insight-card .quote-name { color: var(--gold-light); }
+    .insight-card .quote-state { background: #3a3a3a; color: var(--gold-light); }
+    .insight-card .quote-tag  { color: #aaa; }
+    .insight-card .quote-text { color: #ddd; }
+
+    /* ── TAGS CLOUD ─────────────────────────────────── */
+    .tag-cloud { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag {
+      background: var(--tag-bg); color: var(--accent);
+      font-size: 12px; padding: 4px 12px; border-radius: 99px;
+      border: 1px solid var(--border); font-weight: 500;
+    }
+    .tag.big   { font-size: 15px; padding: 6px 16px; background: var(--gold); color: #fff; border-color: var(--gold); }
+    .tag.med   { font-size: 13px; padding: 5px 13px; background: #e8e0d0; color: var(--accent); border-color: #d4c9b0; }
+    .tag.small { font-size: 11px; padding: 3px 10px; }
+
+    /* ── FOOTER ─────────────────────────────────────── */
+    footer {
+      text-align: center; font-size: 11px; color: var(--soft);
+      padding: 24px; border-top: 1px solid var(--border);
+      margin-top: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .quotes-grid { grid-template-columns: 1fr; }
+      .col-span-2 { grid-column: span 1; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand">The Smooth Edit · Relatório de Campo</div>
+    <h1>Dashboard de Feedback — Consultores</h1>
+    <p>Análise de respostas qualitativas e quantitativas · 24 consultores · 3 estados</p>
+  </div>
+  <div class="header-info">
+    <div>SP · RS · RJ</div>
+    <div>Maio / 2026</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ════════════════════════════════════════
+       SEÇÃO 1 · KPIs GERAIS
+  ════════════════════════════════════════ -->
+  <div class="section-title">Visão Geral</div>
+  <div class="grid grid-4">
+    <div class="card kpi">
+      <div class="num">24</div>
+      <div class="label">Consultores<br>participantes</div>
+    </div>
+    <div class="card kpi">
+      <div class="num green">23</div>
+      <div class="label">Responderam<br>completamente</div>
+    </div>
+    <div class="card kpi">
+      <div class="num gold">96%</div>
+      <div class="label">Taxa de<br>resposta</div>
+    </div>
+    <div class="card kpi">
+      <div class="num red">7</div>
+      <div class="label">Precisam de<br>mais treinamento</div>
+    </div>
+  </div>
+
+  <!-- ALERTA CARTEIRA SEM ALINHAMENTO -->
+  <div class="card" style="margin-top:20px;border-left:4px solid #e67e22;display:flex;align-items:flex-start;gap:20px;padding:18px 24px;">
+    <div style="font-size:40px;font-weight:800;color:#e67e22;line-height:1;flex-shrink:0;">3</div>
+    <div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#e67e22;margin-bottom:4px;">Ponto de Atenção — Barreira de Carteira</div>
+      <div style="font-size:13px;line-height:1.6;color:#444;">
+        Consultores que <strong>não apresentaram o produto</strong> porque sua base de clientes <strong>não trabalha com alinhamento</strong>:
+        Katia Bonfim (cacheadas/naturais), Raquel Brasil (terapeutas/foco em Toctus) e Rosmary (veio do mundo Keune, proposta contrária).
+        Esse grupo precisa de uma <strong>abordagem e argumento específicos</strong> para identificar oportunidades dentro da carteira ou reposicionar o produto para esse perfil de salão.
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SEÇÃO 2 · DISTRIBUIÇÃO
+  ════════════════════════════════════════ -->
+  <div class="section-title">Distribuição de Consultores</div>
+  <div class="grid grid-3">
+
+    <div class="card">
+      <div class="card-title">Por Estado</div>
+      <div class="chart-wrap short">
+        <canvas id="chartEstados"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Status de Resposta</div>
+      <div class="chart-wrap short">
+        <canvas id="chartStatus"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Segurança para Apresentar o Produto</div>
+      <div class="chart-wrap short">
+        <canvas id="chartSeguranca"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SEÇÃO 3 · PRIMEIRA REAÇÃO
+  ════════════════════════════════════════ -->
+  <div class="section-title">Primeira Reação dos Clientes</div>
+  <div class="grid grid-2">
+
+    <div class="card">
+      <div class="card-title">Temas mais recorrentes</div>
+      <div class="chart-wrap tall">
+        <canvas id="chartReacao"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Distribuição por frequência</div>
+      <div style="margin-top: 6px;" class="bar-list">
+        <div class="bar-item">
+          <div class="bar-label"><span>Desconfiança / não conhece a marca</span><span>6 consultores</span></div>
+          <div class="bar-track"><div class="bar-fill fill-red" style="width:100%"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-label"><span>Resistência a trocar o produto atual</span><span>5 consultores</span></div>
+          <div class="bar-track"><div class="bar-fill fill-red" style="width:83%"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-label"><span>Pergunta sobre formol / progressiva</span><span>4 consultores</span></div>
+          <div class="bar-track"><div class="bar-fill fill-gold" style="width:67%"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-label"><span>Dúvidas sobre durabilidade e resultado</span><span>4 consultores</span></div>
+          <div class="bar-track"><div class="bar-fill fill-gold" style="width:67%"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-label"><span>Curiosidade / interesse inicial</span><span>2 consultores</span></div>
+          <div class="bar-track"><div class="bar-fill fill-blue" style="width:33%"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-label"><span>Reação positiva ao produto</span><span>2 consultores</span></div>
+          <div class="bar-track"><div class="bar-fill fill-green" style="width:33%"></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SEÇÃO 4 · OBJEÇÕES
+  ════════════════════════════════════════ -->
+  <div class="section-title">Principais Objeções</div>
+  <div class="grid grid-2">
+
+    <div class="card">
+      <div class="card-title">Objeções mais citadas</div>
+      <div class="chart-wrap tall">
+        <canvas id="chartObjecoes"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Detalhamento por frequência</div>
+      <div style="margin-top:6px;" class="bar-list">
+        <div class="bar-item">
+          <div class="bar-label"><span>Não conhece a marca / insegurança</span><span>4</span></div>
+          <div class="bar-track"><div class="bar-fill fill-red" style="width:100%"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-label"><span>Preço considerado alto</span><span>4</span></div>
+          <div class="bar-track"><div class="bar-fill fill-red" style="width:100%"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-label"><span>Durabilidade / resultado questionável</span><span>4</span></div>
+          <div class="bar-track"><div class="bar-fill fill-red" style="width:100%"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-label"><span>Não quer trocar o produto atual</span><span>3</span></div>
+          <div class="bar-track"><div class="bar-fill fill-gold" style="width:75%"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-label"><span>Não compra sem testar antes</span><span>2</span></div>
+          <div class="bar-track"><div class="bar-fill fill-blue" style="width:50%"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-label"><span>Preconceito com ativo ácido</span><span>2</span></div>
+          <div class="bar-track"><div class="bar-fill fill-blue" style="width:50%"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-label"><span>Profissional não trabalha com alisamento</span><span>2</span></div>
+          <div class="bar-track"><div class="bar-fill fill-soft" style="width:50%"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-label"><span style="color:#e67e22;font-weight:600;">Carteira sem clientes de alinhamento — não chegou a apresentar</span><span>3</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:75%;background:#e67e22;"></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SEÇÃO 5 · O QUE FALTA
+  ════════════════════════════════════════ -->
+  <div class="section-title">O que os Consultores Pedem</div>
+  <div class="grid grid-2">
+
+    <div class="card col-span-2">
+      <div class="card-title">Necessidades mais solicitadas (nº de consultores)</div>
+      <div class="chart-wrap" style="max-height:260px">
+        <canvas id="chartFalta"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SEÇÃO 6 · MARCAS CONCORRENTES
+  ════════════════════════════════════════ -->
+  <div class="section-title">Concorrência Citada</div>
+  <div class="grid grid-2">
+
+    <div class="card">
+      <div class="card-title">Marcas e referências mencionadas</div>
+      <div class="chart-wrap short">
+        <canvas id="chartConcorrentes"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Nuvem de concorrentes</div>
+      <div style="margin-top:12px;" class="tag-cloud">
+        <span class="tag big">Formol (genérico)</span>
+        <span class="tag med">Plástica dos Fios – Cadiveu</span>
+        <span class="tag med">Exoplastia</span>
+        <span class="tag">London</span>
+        <span class="tag">Raff</span>
+        <span class="tag">Zap</span>
+        <span class="tag">Coiffer</span>
+        <span class="tag">Alizze</span>
+        <span class="tag">Keith</span>
+        <span class="tag small">Zuriel</span>
+        <span class="tag small">Ortomolecular</span>
+        <span class="tag small">S Professional</span>
+      </div>
+      <p style="font-size:12px;color:var(--soft);margin-top:16px;">
+        O formol ainda é o principal referencial do mercado em todas as regiões.
+        Cadiveu e Exoplastia lideram entre os produtos com marca conhecida.
+        Preço médio praticado pelos concorrentes: <strong>R$ 150 – R$ 250</strong>.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SEÇÃO 7 · ANÁLISE QUALITATIVA
+  ════════════════════════════════════════ -->
+  <div class="section-title">Análise Qualitativa — Melhores Respostas</div>
+
+  <div class="quotes-grid">
+
+    <!-- EVERTON -->
+    <div class="quote-card insight-card">
+      <div class="quote-meta">
+        <span class="quote-name">Everton Miranda</span>
+        <span class="quote-state">SP</span>
+      </div>
+      <div class="quote-tag">Estratégia de Venda que Funcionou</div>
+      <div class="quote-text">
+        "O que ajudou a vender: as marcas que trabalho são grandes e não têm alisamento — os clientes pedem.
+        Fiz um trabalho de educação, levei clientes à fábrica e apresentei na feira.
+        <strong>Os vídeos do grupo de feedback fizeram diferença.</strong>
+        O cliente que usou a mala técnica antes fechou a compra. Experimentar foi o diferencial."
+      </div>
+    </div>
+
+    <!-- MARCELO BERGAMASCO -->
+    <div class="quote-card">
+      <div class="quote-meta">
+        <span class="quote-name">Marcelo Bergamasco</span>
+        <span class="quote-state">SP</span>
+      </div>
+      <div class="quote-tag">Diagnóstico de Mercado</div>
+      <div class="quote-text">
+        "Por mais que eu fale que não é progressiva, <strong>80% entende que é!</strong>
+        Antes de apresentar, questiono sobre a satisfação com os alisamentos que a profissional usa.
+        A crença limitante é que ácido não alisa — e a segunda objeção é o valor alto para uma marca ainda desconhecida.
+        Acredito que <strong>vídeos do profissional falando do produto</strong>, com cabelo sem filtro, ajudariam muito."
+      </div>
+    </div>
+
+    <!-- ROSMARY -->
+    <div class="quote-card">
+      <div class="quote-meta">
+        <span class="quote-name">Rosmary</span>
+        <span class="quote-state">RS</span>
+      </div>
+      <div class="quote-tag">Proposta de Abordagem Comercial</div>
+      <div class="quote-text">
+        "Eles precisam ver para crer. <strong>Fazer algo em clientes como lançamento do produto, com modelos feitas.</strong>
+        Direcionado exclusivamente para o produto — primeiro laboratório para representantes,
+        depois para clientes. O educador tem que ser especializado: não adianta falar do princípio ativo sem saber as especificidades de cada ativo."
+      </div>
+    </div>
+
+    <!-- LUÍS HENRIQUE -->
+    <div class="quote-card insight-card">
+      <div class="quote-meta">
+        <span class="quote-name">Luís Henrique Cardoso</span>
+        <span class="quote-state">RJ</span>
+      </div>
+      <div class="quote-tag">Lição da Experiência Anterior</div>
+      <div class="quote-text">
+        "Na época da Brae, fomos à rede Werner e Walter e <strong>fizemos a homologação da escova para toda a equipe</strong>
+        — depois começaram os pedidos. Hoje com a Smooth ainda não consigo fazer a homologação.
+        O produto tem qualidade, o resultado é bom. Falta <strong>divulgação para o cabeleireiro criar o desejo.</strong>
+        Portfólio para deixar no salão ajudaria muito."
+      </div>
+    </div>
+
+    <!-- CRISTIANE -->
+    <div class="quote-card">
+      <div class="quote-meta">
+        <span class="quote-name">Cristiane de Melo</span>
+        <span class="quote-state">RS</span>
+      </div>
+      <div class="quote-tag">Resistência de Mercado — Análise Profunda</div>
+      <div class="quote-text">
+        "A objeção mais comum é o preço atrelado ao custo-benefício.
+        Muitos comparam com produtos que já utilizam e, por não conhecerem profundamente a The Smooth Edit,
+        criam resistência. Também surge <strong>insegurança quanto ao resultado prático no dia a dia do salão</strong>,
+        principalmente em relação à durabilidade real nos fios. Estão bem resistentes mesmo."
+      </div>
+    </div>
+
+    <!-- RAPHAEL -->
+    <div class="quote-card">
+      <div class="quote-meta">
+        <span class="quote-name">Raphael</span>
+        <span class="quote-state">RJ</span>
+      </div>
+      <div class="quote-tag">O que Funciona na Prática</div>
+      <div class="quote-text">
+        "Ganhei um litro do produto e tenho feito <strong>demonstrações</strong> — e tenho vendido dessa forma.
+        Os clientes não compram sem testar o produto. Quem já me conhece e teve feedback
+        positivo de outros cabeleireiros que usam fecha a compra. <strong>Confiança no representante</strong> é o motor."
+      </div>
+    </div>
+
+    <!-- RAQUEL BRASIL -->
+    <div class="quote-card">
+      <div class="quote-meta">
+        <span class="quote-name">Raquel Brasil</span>
+        <span class="quote-state">SP</span>
+      </div>
+      <div class="quote-tag">Necessidade de Treinamento Presencial</div>
+      <div class="quote-text">
+        "Falando de teoria não tenho nenhuma dúvida, mas <strong>na parte prática falta um treinamento presencial</strong>
+        — ver o passo a passo no detalhe, entender segredinhos que são o diferencial para a eficácia do produto.
+        Online para mim não faria diferença. Os feedbacks das clientes que compraram e testaram são positivos."
+      </div>
+    </div>
+
+    <!-- LUAN -->
+    <div class="quote-card insight-card">
+      <div class="quote-meta">
+        <span class="quote-name">Luan</span>
+        <span class="quote-state">RJ</span>
+      </div>
+      <div class="quote-tag">Posicionamento de Mercado</div>
+      <div class="quote-text">
+        "Alguns querem degustar, outros não trocam porque já trabalham há bastante tempo com algum realinhamento.
+        É um mercado prostituído. <strong>Vejo a Smooth como corrente direto à Exoplastia — padrão mais premium à London.</strong>
+        Clientes que reclamam de preço utilizam marcas que nunca ouvi falar.
+        Miniaturas para experimentar seriam um diferencial."
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SEÇÃO 7B · BARREIRA DE CARTEIRA
+  ════════════════════════════════════════ -->
+  <div class="section-title" style="color:#e67e22;">Barreira de Carteira — Consultores que Não Chegaram a Apresentar</div>
+
+  <div class="quotes-grid">
+
+    <div class="quote-card" style="border-left-color:#e67e22;">
+      <div class="quote-meta">
+        <span class="quote-name">Katia Bonfim</span>
+        <span class="quote-state">SP</span>
+      </div>
+      <div class="quote-tag">Carteira de Cacheadas / Cabelos Naturais</div>
+      <div class="quote-text">
+        "A minha base de clientes é de cacheadas e cabelos naturais e fora de SP, então
+        <strong>não ofereci para meus clientes.</strong>
+        Não tenho intuito de trabalhar com produtos que alteram a estrutura do fio.
+        Se identificar a oportunidade dentro de algum salão vou oferecer para não perder a oportunidade,
+        mas o foco de trabalho <strong>não é fazer prospecção em volta desse mercado.</strong>"
+      </div>
+    </div>
+
+    <div class="quote-card" style="border-left-color:#e67e22;">
+      <div class="quote-meta">
+        <span class="quote-name">Raquel Brasil</span>
+        <span class="quote-state">SP</span>
+      </div>
+      <div class="quote-tag">Foco em Toctus — Clientes Sem Perfil de Alinhamento</div>
+      <div class="quote-text">
+        "Em sua maioria minhas clientes são terapeutas e <strong>não trabalham com alinhamento.</strong>
+        Com foco em Toctus, estou bem voltada para Toctus.
+        Quando está falando com um cliente de Toctus,
+        <strong>não faz sentido apresentar química, pois foge um pouco do tema.</strong>
+        Quando as clientes estão acostumadas comigo com Toctus, sinto uma resistência quando tento agendar um dia para demonstrar The Smooth."
+      </div>
+    </div>
+
+    <div class="quote-card" style="border-left-color:#e67e22;grid-column:span 2;">
+      <div class="quote-meta">
+        <span class="quote-name">Rosmary</span>
+        <span class="quote-state">RS</span>
+      </div>
+      <div class="quote-tag">Perfil de Carteira Contrário ao Produto</div>
+      <div class="quote-text">
+        "Te confesso que nunca foi meu forte vender 'mudança de forma' —
+        <strong>venho do mundo Keune e trabalhávamos o sentido contrário dessa proposta.</strong>
+        Grande parte dos meus clientes já tem o produto para esse serviço, que usam há bastante tempo,
+        daí não se mostram muito abertos. Tentou deixar amostra e produto para que o cliente teste,
+        e não teve resultado positivo. Estamos mais fortes com cachos do que propriamente com progressiva aqui na minha região."
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SEÇÃO 8 · O QUE OS CLIENTES TÊM EM COMUM
+  ════════════════════════════════════════ -->
+  <div class="section-title">Perfil Comum dos Clientes que Compram</div>
+  <div class="grid grid-3">
+    <div class="card">
+      <div class="card-title">Comportamento</div>
+      <div class="tag-cloud" style="margin-top:8px">
+        <span class="tag med">Já trabalham com alisamento</span>
+        <span class="tag">Buscam produto diferente</span>
+        <span class="tag">Valorizam saúde do fio</span>
+        <span class="tag small">Trabalham com mechas</span>
+        <span class="tag small">Não querem formol</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Fator de Decisão</div>
+      <div class="tag-cloud" style="margin-top:8px">
+        <span class="tag big">Confiança no representante</span>
+        <span class="tag med">Testem antes de comprar</span>
+        <span class="tag">Feedback de outros profissionais</span>
+        <span class="tag small">Relacionamento antigo</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Oportunidade de Entrada</div>
+      <div class="tag-cloud" style="margin-top:8px">
+        <span class="tag med">Cansados de formol</span>
+        <span class="tag med">Migração para tratamentos</span>
+        <span class="tag">Salão de pequeno/médio porte</span>
+        <span class="tag small">Profissionais de mechas</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SEÇÃO 9 · RESUMO EXECUTIVO
+  ════════════════════════════════════════ -->
+  <div class="section-title">Resumo Executivo</div>
+  <div class="grid grid-2">
+    <div class="card" style="border-left:4px solid var(--red)">
+      <div class="card-title" style="color:var(--red)">Pontos Críticos</div>
+      <ul style="font-size:13px;line-height:2;padding-left:18px;color:#444;">
+        <li>Desconhecimento da marca é a barreira #1 em todos os estados</li>
+        <li>80% dos clientes confunde com progressiva tradicional</li>
+        <li>Preço de tabela original considerado inviável (R$ 180–250 é a faixa aceita)</li>
+        <li>7 consultores não se sentem seguros para apresentar o produto</li>
+        <li>Clientes reclamam de durabilidade e resultado em cabelos crespos</li>
+        <li>Falta de homologação em redes grandes impede escala</li>
+        <li><strong style="color:#e67e22;">3 consultores não apresentaram</strong> o produto — carteira sem clientes de alinhamento (Katia, Raquel, Rosmary)</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:4px solid var(--green)">
+      <div class="card-title" style="color:var(--green)">Oportunidades e Ações Prioritárias</div>
+      <ul style="font-size:13px;line-height:2;padding-left:18px;color:#444;">
+        <li><strong>#1 Treinamento presencial</strong> — solicitado por 7+ consultores</li>
+        <li><strong>#2 Amostras/mala técnica</strong> — quem testou, comprou</li>
+        <li><strong>#3 Vídeos de resultado real</strong> — antes/durante/depois, sem filtro</li>
+        <li><strong>#4 Material impresso resumido</strong> (1 página, benefícios + ativos)</li>
+        <li><strong>#5 Visual Aid/portfólio</strong> para deixar no salão</li>
+        <li><strong>#6 Estratégia de homologação</strong> em redes e workshops</li>
+      </ul>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Dashboard gerado com base nas respostas da planilha de feedback de campo · The Smooth Edit · 2026
+</footer>
+
+<script>
+  const GOLD = '#b08d57';
+  const GOLD2 = '#d4aa70';
+  const RED = '#c0392b';
+  const BLUE = '#2980b9';
+  const GREEN = '#27ae60';
+  const SOFT = '#95a5a6';
+  const DARK = '#2c2c2c';
+
+  Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = '#555';
+
+  // ── 1. Estados ──
+  new Chart(document.getElementById('chartEstados'), {
+    type: 'doughnut',
+    data: {
+      labels: ['São Paulo (SP)', 'Rio Grande do Sul (RS)', 'Rio de Janeiro (RJ)'],
+      datasets: [{ data: [14, 6, 4], backgroundColor: [DARK, GOLD, BLUE], borderWidth: 0 }]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } } },
+      cutout: '60%'
+    }
+  });
+
+  // ── 2. Status ──
+  new Chart(document.getElementById('chartStatus'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Respondeu', 'Respondendo'],
+      datasets: [{ data: [23, 1], backgroundColor: [GREEN, GOLD], borderWidth: 0 }]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } } },
+      cutout: '60%'
+    }
+  });
+
+  // ── 3. Segurança ──
+  new Chart(document.getElementById('chartSeguranca'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Seguro', 'Seguro, pode melhorar', 'Precisa de treinamento', 'Não aplicável'],
+      datasets: [{ data: [9, 2, 7, 1], backgroundColor: [GREEN, GOLD, RED, SOFT], borderWidth: 0 }]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } } },
+      cutout: '60%'
+    }
+  });
+
+  // ── 4. Primeira Reação ──
+  new Chart(document.getElementById('chartReacao'), {
+    type: 'bar',
+    data: {
+      labels: [
+        'Desconfiança / não conhece a marca',
+        'Resistência a trocar produto',
+        'Pergunta sobre formol/progressiva',
+        'Dúvidas sobre durabilidade',
+        'Curiosidade / interesse',
+        'Reação positiva'
+      ],
+      datasets: [{
+        label: 'Nº de consultores',
+        data: [6, 5, 4, 4, 2, 2],
+        backgroundColor: [RED, RED, GOLD, GOLD, BLUE, GREEN],
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#f0ede6' }, ticks: { stepSize: 1 } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+
+  // ── 5. Objeções ──
+  new Chart(document.getElementById('chartObjecoes'), {
+    type: 'bar',
+    data: {
+      labels: [
+        'Não conhece a marca',
+        'Preço alto',
+        'Durabilidade questionável',
+        'Não quer trocar produto',
+        'Carteira sem clientes de alinhamento',
+        'Não compra sem testar',
+        'Preconceito com ácido',
+        'Não trabalha com alisamento'
+      ],
+      datasets: [{
+        label: 'Nº de consultores',
+        data: [4, 4, 4, 3, 3, 2, 2, 2],
+        backgroundColor: [RED, RED, RED, GOLD, '#e67e22', BLUE, BLUE, SOFT],
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#f0ede6' }, ticks: { stepSize: 1 } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+
+  // ── 6. O que falta ──
+  new Chart(document.getElementById('chartFalta'), {
+    type: 'bar',
+    data: {
+      labels: [
+        'Treinamento presencial / prático',
+        'Amostras / mala técnica',
+        'Vídeos antes/durante/depois',
+        'Material impresso / PDF resumido',
+        'Visual Aid / portfólio p/ salão',
+        'Workshop / demonstração p/ clientes'
+      ],
+      datasets: [{
+        label: 'Consultores que solicitaram',
+        data: [7, 3, 3, 3, 2, 2],
+        backgroundColor: [DARK, GOLD, GOLD, GOLD, BLUE, BLUE],
+        borderRadius: 4
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { grid: { color: '#f0ede6' }, ticks: { stepSize: 1 } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  // ── 7. Concorrentes ──
+  new Chart(document.getElementById('chartConcorrentes'), {
+    type: 'bar',
+    data: {
+      labels: ['Formol (genérico)', 'Cadiveu / Plástica', 'Exoplastia', 'London', 'Raff', 'Zap', 'Coiffer', 'Alizze', 'Zuriel'],
+      datasets: [{
+        label: 'Menções',
+        data: [5, 2, 2, 1, 1, 1, 1, 1, 1],
+        backgroundColor: [RED, GOLD, GOLD, BLUE, SOFT, SOFT, SOFT, SOFT, SOFT],
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#f0ede6' }, ticks: { stepSize: 1 } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+</script>
+</body>
+</html>

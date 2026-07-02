@@ -1,0 +1,107 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getRole() == 'admin';
+    }
+
+    function isAdminOrManager() {
+      return isAuthenticated() && (getRole() == 'admin' || getRole() == 'manager');
+    }
+
+    function hasWriteAccess() {
+      return isAuthenticated() && getRole() != 'read_only';
+    }
+
+    // Usuários — apenas admin cria; cada um lê/edita o próprio perfil
+    match /users/{userId} {
+      allow read:   if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAdmin();
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // Cards (Pipeline Conteúdo)
+    match /cards/{docId} {
+      allow read:   if isAuthenticated();
+      allow create: if hasWriteAccess();
+      allow update: if hasWriteAccess();
+      allow delete: if isAdminOrManager();
+    }
+
+    // Requests (Pipeline Solicitações)
+    match /requests/{docId} {
+      allow read:   if isAuthenticated();
+      allow create: if hasWriteAccess();
+      allow update: if hasWriteAccess();
+      allow delete: if isAdminOrManager();
+    }
+
+    // Social
+    match /social_accounts/{docId} {
+      allow read:   if isAuthenticated();
+      allow write:  if hasWriteAccess();
+    }
+    match /social_posts/{docId} {
+      allow read:   if isAuthenticated();
+      allow write:  if hasWriteAccess();
+    }
+    match /social_competitors/{docId} {
+      allow read:   if isAuthenticated();
+      allow write:  if hasWriteAccess();
+    }
+
+    // Clientes (CRM)
+    match /customers/{docId} {
+      allow read:   if isAuthenticated();
+      allow write:  if hasWriteAccess();
+    }
+
+    // Automações
+    match /automations/{docId} {
+      allow read:   if isAuthenticated();
+      allow write:  if isAdminOrManager();
+    }
+
+    // Assets
+    match /assets/{docId} {
+      allow read:   if isAuthenticated();
+      allow write:  if hasWriteAccess();
+    }
+
+    // News / Comunicados
+    match /news/{docId} {
+      allow read:   if isAuthenticated();
+      allow write:  if isAdminOrManager();
+    }
+    match /news_dist/{docId} {
+      allow read:   if isAuthenticated();
+      allow write:  if isAdminOrManager();
+    }
+
+    // Config global (portais, projetos, BUs, status)
+    match /config/{docId} {
+      allow read:   if isAuthenticated();
+      allow write:  if isAdminOrManager();
+    }
+
+    // Audit logs — append-only; leitura restrita a admins
+    match /audit_logs/{logId} {
+      allow read:   if isAdmin();
+      allow create: if isAuthenticated()
+                    && request.resource.data.user_id == request.auth.uid;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}

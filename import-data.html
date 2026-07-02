@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head><meta charset="UTF-8"><title>Importar dados</title>
+<style>body{font-family:sans-serif;padding:40px;background:#111;color:#eee;}button{padding:12px 24px;background:#22c55e;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer;}pre{background:#1e1e1e;padding:16px;border-radius:8px;overflow:auto;max-height:300px;}</style>
+</head>
+<body>
+<h2>Importar dados para localhost:8080</h2>
+<p>Clica no botão abaixo. Os dados serão salvos no localStorage desta origem.</p>
+<button onclick="importar()">Importar agora</button>
+<pre id="log">Aguardando...</pre>
+<script>
+function importar(){
+  var dados = {"kami-mkt-req-v1":"[{\"id\":\"mpfk49fdjla6\",\"createdAt\":1779371952313,\"status\":\"triage\",\"nome\":\"Teste\",\"telefone\":\"11111111111\",\"email\":\"stefany@kamico.com.br\",\"setor\":\"Comercial\",\"requestTitle\":\"Teste 1\",\"bizUnit\":\"958\",\"orderType\":\"Apresentações\",\"desiredDate\":\"2026-06-30\",\"deliveryMethod\":\"WhatsApp\",\"details\":\"xopt\\nrej aisuda\\n\\ndk jdiojnsd\\nksjdiasudjasdczxmc\\nksjdlkjfdjaskld\\n\\n\\n\\nfdjksldjflsdkfsdjfklsjdf\\n\",\"responsible\":[],\"attachmentName\":\"Formação em Terapia Capilar - Benefícios.jpeg\"}]","kami-mkt-users-v1":"[{\"id\":\"admin-default\",\"email\":\"mkt@kamico.com.br\",\"name\":\"Administrador\",\"role\":\"admin\",\"pwd\":\"kde02fbba\",\"avatar\":\"\"}]","kami-mkt-v2":"[{\"id\":\"mpecjw56iyfx\",\"createdAt\":1779298778490,\"status\":\"social-todo\",\"title\":\"Teste 1\",\"project\":\"958\",\"contentType\":\"Carrossel\",\"funnel\":\"Topo\",\"deliveryDate\":\"2026-06-11\",\"publishDate\":\"2026-06-12\",\"script\":\"TES A\",\"briefing\":\"TES B\",\"caption\":\"TESC\",\"fileLink\":\"\",\"fileCount\":\"\",\"publishInstructions\":\"\",\"channel\":[\"Instagram Feed\",\"Instagram Stories\"],\"responsible\":[\"Leslie Arantes\"]},{\"id\":\"mpehxi60y1ni\",\"createdAt\":1779307811640,\"status\":\"cri-todo\",\"title\":\"TESTE 2\",\"project\":\"KAMI CO. BR\",\"contentType\":\"Reel\",\"funnel\":\"Meio\",\"deliveryDate\":\"2026-06-13\",\"publishDate\":\"2026-06-14\",\"script\":\"TESTE 1\",\"briefing\":\"TESTE 2\",\"caption\":\"TESTE 3\",\"fileLink\":\"\",\"fileCount\":\"\",\"publishInstructions\":\"\",\"channel\":[\"Instagram Feed\"],\"responsible\":[\"Stéfany Dias\"]}]"};
+
+  var log = document.getElementById('log');
+  var linhas = [];
+  Object.keys(dados).forEach(function(k){
+    localStorage.setItem(k, dados[k]);
+    var arr = JSON.parse(dados[k]);
+    linhas.push('✅ ' + k + ' — ' + (Array.isArray(arr) ? arr.length + ' itens' : 'salvo'));
+  });
+  linhas.push('');
+  linhas.push('Pronto! Agora acessa http://localhost:8080 na mesma aba ou em outra aba.');
+  log.textContent = linhas.join('\n');
+}
+</script>
+</body>
+</html>
