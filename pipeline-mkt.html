@@ -667,9 +667,9 @@ const ST2 = [
   {id:'done',     label:'Concluído',                  color:'#22c55e'},
 ];
 const ORDER_TYPES = [
-  'Adesivo','Apresentações','Artes em geral','Banner / Rollup','Catálogo',
-  'Comunicados','E-mails','Lâminas comerciais — campanhas ou promoções',
-  'Outros','Papelaria','Tabela'
+  'Adesivo','Apresentações','Artes em geral','Banner / Rollup','Carta','Catálogo',
+  'Comunicados','Convite','E-mails','Lâminas comerciais — campanhas ou promoções',
+  'Outros','Papelaria','Tag','Tabela'
 ];
 const BIZ_UNITS = [
   '958','Balens','Cadiveu PT','KAMI CO. BR','KAMI CO. Group',
@@ -697,12 +697,13 @@ const SOCIAL_PLAT = [
   {id:'google_ads', name:'Google Ads',         short:'GA',  color:'#4285f4', grad:'linear-gradient(135deg,#4285f4,#34a853,#ea4335)'},
 ];
 const SOC_POST_STATUS = [
-  {id:'draft',     label:'Rascunho',             bg:'#fef9c3', color:'#a16207'},
-  {id:'pending',   label:'Aguardando aprovação', bg:'#f3e8ff', color:'#7e22ce'},
-  {id:'approved',  label:'Aprovado',             bg:'#cffafe', color:'#0e7490'},
-  {id:'scheduled', label:'Agendado',             bg:'#dcfce7', color:'#166534'},
-  {id:'published', label:'Publicado',            bg:'#e0e7ff', color:'#4338ca'},
-  {id:'failed',    label:'Falhou',               bg:'#fee2e2', color:'#dc2626'},
+  {id:'draft',         label:'Rascunho',             bg:'#fef9c3', color:'#a16207'},
+  {id:'in_production', label:'Em produção',           bg:'#dbeafe', color:'#1d4ed8'},
+  {id:'pending',       label:'Aguardando aprovação', bg:'#f3e8ff', color:'#7e22ce'},
+  {id:'approved',      label:'Aprovado',             bg:'#cffafe', color:'#0e7490'},
+  {id:'scheduled',     label:'Agendado',             bg:'#dcfce7', color:'#166534'},
+  {id:'published',     label:'Publicado',            bg:'#e0e7ff', color:'#4338ca'},
+  {id:'failed',        label:'Falhou',               bg:'#fee2e2', color:'#dc2626'},
 ];
 const SOC_CONTENT_TYPES = {
   instagram:  ['Feed','Reels','Stories','Carrossel'],
@@ -877,6 +878,7 @@ function clearSession(){
   S.windsor_api_key='';
   S.windsor_data=null;
   S.notifications_open=false;
+  stopPublicationScheduler();
 }
 function loadSession(){} // substituído pelo onAuthStateChanged abaixo
 function canAccess(key){
@@ -981,6 +983,7 @@ _auth.onAuthStateChanged(async function(firebaseUser){
         AUTH.showLogin=false;
         setRolePipe(AUTH.session.role,AUTH.session.access);
         await load();
+        startPublicationScheduler();
       } else {
         // Usuário no Auth mas sem perfil no Firestore — cria perfil básico
         const profile={name:firebaseUser.email,email:firebaseUser.email,role:'user',access:['dash','content','requests'],avatar:'',department:'',position:'',supervisor:'',birthdate:'',workPhone:'',mobilePhone:'',city:'',createdAt:firebase.firestore.FieldValue.serverTimestamp()};
@@ -989,6 +992,7 @@ _auth.onAuthStateChanged(async function(firebaseUser){
         AUTH.showLogin=false;
         setRolePipe('user',AUTH.session.access);
         await load();
+        startPublicationScheduler();
       }
     }catch(e){console.error('onAuthStateChanged:',e);AUTH.showLogin=true;}
   } else {
@@ -1059,7 +1063,8 @@ let S = {
   social_show_profiles: false,
   social_profile_search: '',
   modal_soc: {open:false, platform:null},
-  schedule_form: {profiles:[], channels:[], text:'', hashtags:'', mediaName:'', date:'', time:'18:00', postStatus:'draft', contentTypes:{}, firstComment:'', tags:'', igFormat:'Feed', altText:'', location:'', shareToFacebook:false, collabUser:'', paidPartnership:'', shopTag:'', disableComments:false, peopleTags:'', shareToFeed:false, isTest:false, storyLink:''},
+  schedule_form: {profiles:[], channels:[], text:'', hashtags:'', mediaName:'', driveLink:'', date:'', time:'18:00', postStatus:'draft', contentTypes:{}, firstComment:'', tags:'', igFormat:'Feed', altText:'', location:'', shareToFacebook:false, collabUser:'', paidPartnership:'', shopTag:'', disableComments:false, peopleTags:'', shareToFeed:false, isTest:false, storyLink:'', claudeTitle:'', claudeBriefing:''},
+  modal_claude_import: {open:false},
   portal_content: null,
   portal_current: null,
   portal_editing_id: null,
@@ -2102,9 +2107,9 @@ function html(){
     :isPortal?'<div class="main">'+renderPortal()+'</div>'
     :isAssets?'<div class="main">'+renderAssets()+'</div>'
     :S.pipe==='pipeline-all'?'<div class="main">'+renderPipelineAll()+'</div>'
-    :isPipe1?flt1()+sts1()+'<div class="main">'+(S.view==='kanban'?kban1():list1())+'</div>'
+    :isPipe1?flt1()+sts1()+'<div class="main">'+(S.view==='social-kanban'?socKanban():S.view==='kanban'?kban1():list1())+'</div>'
             :flt2()+sts2()+'<div class="main">'+(S.view2==='kanban'?kban2():list2())+'</div>')
-    +'</div>'+renderOnboarding()+renderNotifPanel()+modal1()+modal2()+renderUsersModal()+renderConfigModal()+renderAIModal()+renderConfirmModal()+renderProfileModal()+renderEditUserModal()+renderAutomationsModal()+renderPortalItemModal()+renderPortalLegendModal()+renderPortalDupModal()+renderPortalTemplateModal()+renderNewsPopup()+renderNewsModal()+renderNewsPopupDist()+renderNewsModalDist();
+    +'</div>'+renderOnboarding()+renderNotifPanel()+modal1()+modal2()+renderUsersModal()+renderConfigModal()+renderAIModal()+renderConfirmModal()+renderProfileModal()+renderEditUserModal()+renderAutomationsModal()+renderPortalItemModal()+renderPortalLegendModal()+renderPortalDupModal()+renderPortalTemplateModal()+renderNewsPopup()+renderNewsModal()+renderNewsPopupDist()+renderNewsModalDist()+renderClaudeImportModal();
 }
 
 function renderUsersModal(){
@@ -4226,6 +4231,7 @@ function flt1(){
     <div style="display:flex;background:var(--s2);border:1px solid var(--b);border-radius:7px;padding:2px;gap:1px;flex-shrink:0;">
       <button class="vbtn ${S.view==='kanban'?'on':''}" data-view="kanban" style="padding:4px 10px;font-size:11px;">⊞ Kanban</button>
       <button class="vbtn ${S.view==='list'?'on':''}" data-view="list" style="padding:4px 10px;font-size:11px;">☰ Lista</button>
+      <button class="vbtn ${S.view==='social-kanban'?'on':''}" data-view="social-kanban" style="padding:4px 10px;font-size:11px;">📱 Redes Sociais</button>
     </div>
     <span class="flabel">Filtrar</span>
     <input class="fsearch" type="text" placeholder="Buscar título..." value="${esc(f.search)}" data-f1="search">
@@ -5413,6 +5419,34 @@ function renderDashCentrals(){
 // PIPELINE 3 — SOCIAL MEDIA
 // ═══════════════════════════════════════
 
+function renderClaudeImportModal(){
+  if(!S.modal_claude_import?.open)return'';
+  return`<div class="overlay" style="z-index:1200;">
+    <div class="modal" style="max-width:540px;">
+      <div class="mhead">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#4f46e5);display:flex;align-items:center;justify-content:center;font-size:16px;">✦</div>
+          <div class="mhead-t">Importar do Claude Cowork</div>
+        </div>
+        <button class="mclose" data-action="close-claude-import">×</button>
+      </div>
+      <div class="mbody" style="display:flex;flex-direction:column;gap:14px;">
+        <div style="font-size:12px;color:var(--t3);line-height:1.6;background:var(--s2);border-radius:8px;padding:10px 14px;">
+          Cole abaixo o JSON gerado pelo Claude Cowork com os campos: <code>title</code>, <code>caption</code>, <code>hashtags</code>, <code>briefing</code>, <code>driveLink</code> (opcional).
+        </div>
+        <div class="fg"><label>JSON do Claude Cowork</label>
+          <textarea id="claude-import-json" rows="8" placeholder='{"title":"Nome do post","caption":"Texto da legenda...","hashtags":"#marca #produto","briefing":"Briefing da arte...","driveLink":"https://drive.google.com/..."}' style="font-family:monospace;font-size:11px;resize:vertical;"></textarea>
+        </div>
+        <div id="claude-import-error" style="display:none;color:#dc2626;font-size:11px;font-weight:600;"></div>
+      </div>
+      <div class="mfoot">
+        <button class="btn modal btn-o" data-action="close-claude-import">Cancelar</button>
+        <button class="btn btn-p" data-action="confirm-claude-import">Importar</button>
+      </div>
+    </div>
+  </div>`;
+}
+
 function socConnectModal(){
   const m=S.modal_soc;
   if(!m.open||!m.platform)return'';
@@ -5431,6 +5465,13 @@ function socConnectModal(){
         <div class="fg"><label>Handle / @usuário</label><input type="text" id="soc-acc-handle" placeholder="Ex: kamico.br (sem @)"></div>
         <div class="fg"><label>Seguidores (opcional)</label><input type="number" id="soc-acc-followers" placeholder="0" min="0"></div>
         <div class="fg"><label>Engajamento % (opcional)</label><input type="number" id="soc-acc-engagement" placeholder="0.0" step="0.1" min="0"></div>
+        <div style="border-top:1px solid var(--b);margin:4px 0;padding-top:12px;">
+          <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;">Credenciais de API (para publicação automática)</div>
+          <div class="fg"><label>Access Token</label><input type="password" id="soc-acc-token" placeholder="Token de acesso (Page / Business)"></div>
+          ${m.platform==='instagram'||m.platform==='facebook'?`<div class="fg"><label>${m.platform==='instagram'?'Instagram User ID':'Page ID'}</label><input type="text" id="soc-acc-igid" placeholder="ID numérico da conta"></div>`:''}
+          ${m.platform==='tiktok'?`<div class="fg"><label>Open ID</label><input type="text" id="soc-acc-igid" placeholder="open_id da conta TikTok"></div>`:''}
+          <div class="fg"><label>Expiração do token</label><input type="date" id="soc-acc-token-expiry"></div>
+        </div>
       </div>
       <div class="mfoot">
         <button class="btn modal btn-o" data-action="soc-close-modal">Cancelar</button>
@@ -5516,7 +5557,26 @@ function socDashboard(){
     ? SOCIAL_PLAT.filter(p=>connected.find(a=>a.id===selAcc&&a.platform===p.id)||!connected.find(a=>a.platform===p.id))
     : SOCIAL_PLAT;
 
+  // Token expiry warnings
+  const today=new Date(); today.setHours(0,0,0,0);
+  const in7=new Date(today); in7.setDate(in7.getDate()+7);
+  const expiringAccs=connected.filter(a=>{if(!a.tokenExpiry)return false;const exp=new Date(a.tokenExpiry);return exp<=in7;});
+  const tokenWarning=expiringAccs.length?`<div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+    <span style="font-size:16px;">⚠️</span>
+    <div><div style="font-size:12px;font-weight:700;color:#92400e;">Token de API expirando</div>
+    <div style="font-size:11px;color:#78350f;margin-top:2px;">${expiringAccs.map(a=>`<strong>${esc(a.accountName)}</strong> expira em ${a.tokenExpiry}`).join(' · ')} — atualize antes da próxima publicação.</div></div>
+  </div>`:'';
+
+  // Failed posts notification
+  const failedPosts=(S.social_posts||[]).filter(p=>p.status==='failed');
+  const failedBanner=failedPosts.length?`<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+    <span style="font-size:16px;">❌</span>
+    <div><div style="font-size:12px;font-weight:700;color:#991b1b;">Publicação falhou</div>
+    <div style="font-size:11px;color:#7f1d1d;margin-top:2px;">${failedPosts.length} post(s) falharam após 3 tentativas. Acesse o Calendário para revisar.</div></div>
+  </div>`:'';
+
   return`<div style="flex:1;overflow-y:auto;padding:20px;">
+    ${tokenWarning}${failedBanner}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${connected.length?'8':'16'}px;">
       <div>
         <div style="font-size:15px;font-weight:700;color:var(--t1)">Contas conectadas</div>
@@ -5557,7 +5617,34 @@ function socSchedule(){
   const previewChannels=(f.channels||[]);
   const col='border-right:1px solid var(--b);overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:14px;background:var(--s1);';
   const secLabel=(n,t,extra='',required=false)=>`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><span style="font-size:12px;font-weight:700;color:var(--t1);"><span style="color:var(--ac);margin-right:5px;">${n}.</span>${t}${required?`<span style="color:#dc2626;margin-left:3px;" title="Campo obrigatório">*</span>`:' <span style="font-size:10px;font-weight:400;color:var(--t3);">(opcional)</span>'}</span>${extra}</div>`;
-  return`<div style="flex:1;overflow:hidden;display:flex;justify-content:center;">
+
+  // Posts aprovados no kanban aguardando agendamento
+  const approvedPosts=(S.social_posts||[]).filter(p=>p.status==='approved');
+  const approvedBanner=approvedPosts.length?`
+    <div style="background:var(--s1);border-bottom:1px solid var(--b);padding:12px 20px;flex-shrink:0;">
+      <div style="font-size:11px;font-weight:700;color:var(--t1);margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+        <span style="background:#dcfce7;color:#166534;border-radius:5px;padding:2px 8px;">✓ ${approvedPosts.length} post${approvedPosts.length>1?'s':''} aprovado${approvedPosts.length>1?'s':''} aguardando agendamento</span>
+        <span style="font-size:10px;color:var(--t3);font-weight:400;">← vem do Kanban em Criar Conteúdo</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${approvedPosts.map(p=>{
+          const plat=gplat((S.social_accounts||[]).find(a=>(p.profiles||[]).includes(a.id))?.platform||'');
+          const isLoaded=S.schedule_form?._fromPostId===p.id;
+          return`<div style="border:1.5px solid ${isLoaded?'var(--ac)':'var(--b)'};border-radius:9px;padding:10px 12px;background:${isLoaded?'var(--ac)0d':'var(--s2)'};min-width:180px;max-width:240px;cursor:pointer;flex-shrink:0;" data-action="soc-load-approved" data-pid="${esc(p.id)}">
+            <div style="font-size:11px;font-weight:700;color:var(--t1);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.claudeTitle||p.text?.slice(0,40)||'(sem título)')}</div>
+            <div style="font-size:10px;color:var(--t3);">${esc((p.text||'').slice(0,50))}${(p.text||'').length>50?'…':''}</div>
+            ${isLoaded?`<div style="font-size:10px;color:var(--ac);font-weight:700;margin-top:4px;">✓ Carregado no formulário</div>`:`<div style="font-size:10px;color:var(--ac);font-weight:600;margin-top:4px;">Clique para agendar →</div>`}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`
+  :`<div style="background:#fffbeb;border-bottom:1px solid #fde68a;padding:10px 20px;flex-shrink:0;font-size:11px;color:#92400e;display:flex;align-items:center;gap:8px;flex-shrink:0;">
+      ⚠️ Nenhum post aprovado no momento. Aprove posts no <button data-action="go-content-kanban" style="background:none;border:none;color:var(--ac);font-weight:700;cursor:pointer;font-size:11px;padding:0;font-family:inherit;">Kanban de Criação de Conteúdo</button> para programar aqui.
+    </div>`;
+
+  return`<div style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+    ${approvedBanner}
+    <div style="flex:1;overflow:hidden;display:flex;justify-content:center;">
     <div style="display:flex;width:100%;max-width:1200px;">
 
     <!-- COLUNA 1: Perfis + Texto -->
@@ -5608,7 +5695,13 @@ function socSchedule(){
         ${f.mediaName?`<div style="font-size:10px;color:var(--ac);margin-top:8px;font-weight:600;">📎 ${esc(f.mediaName)}</div>`:''}
       </div>
 
-      ${secLabel(5,'Data e horário das publicações','',true)}
+      ${secLabel(5,'Link da arte no Drive','<span style="font-size:10px;color:var(--t3);">Obrigatório para enviar à aprovação</span>',false)}
+      <div style="display:flex;align-items:center;gap:6px;">
+        <input type="url" id="soc-drive-link" data-sf="driveLink" value="${esc(f.driveLink||'')}" placeholder="https://drive.google.com/..." style="flex:1;background:var(--s2);border:1px solid ${f.postStatus==='pending'&&!f.driveLink?'#dc2626':'var(--b)'};border-radius:7px;color:var(--t1);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;">
+        ${f.driveLink?`<a href="${esc(f.driveLink)}" target="_blank" rel="noopener" style="flex-shrink:0;background:var(--s2);border:1px solid var(--b);border-radius:6px;color:var(--ac);font-size:11px;font-weight:700;padding:7px 11px;text-decoration:none;">Abrir</a>`:''}
+      </div>
+
+      ${secLabel(6,'Data e horário das publicações','',true)}
       <div style="background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
         <span style="font-size:11px;color:var(--t3);">Selecione os canais no passo 2 para definir datas individuais.</span>
         <input type="date" id="soc-date" data-sf="date" value="${esc(f.date)}" style="background:var(--s1);border:1px solid var(--b);border-radius:6px;color:var(--t1);padding:6px 10px;font-size:12px;font-family:inherit;outline:none;">
@@ -5721,9 +5814,61 @@ function socSchedule(){
       </div>
     </div>
     </div>
+  </div>
   </div>`;
 }
 
+
+function socKanban(){
+  const isGestor=AUTH.session?.role==='admin'||AUTH.session?.role==='gestor';
+  const cols=[
+    {id:'draft',         label:'Rascunho',             statuses:['draft']},
+    {id:'in_production', label:'Em produção',           statuses:['in_production']},
+    {id:'pending',       label:'Aguardando aprovação', statuses:['pending']},
+    {id:'scheduled',     label:'Agendado',             statuses:['approved','scheduled']},
+    {id:'published',     label:'Publicado',            statuses:['published']},
+    {id:'failed',        label:'Falha na publicação',  statuses:['failed']},
+  ];
+  const posts=S.social_posts||[];
+  const colStyle='min-width:220px;max-width:260px;flex-shrink:0;display:flex;flex-direction:column;gap:0;';
+  const cardStyle='background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;';
+  return`<div style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+    <div style="flex:1;overflow-x:auto;overflow-y:hidden;padding:16px 20px;display:flex;gap:14px;align-items:flex-start;">
+      ${cols.map(col=>{
+        const colPosts=posts.filter(p=>col.statuses.includes(p.status));
+        const st=SOC_POST_STATUS.find(s=>col.statuses.includes(s.id))||SOC_POST_STATUS[0];
+        return`<div style="${colStyle}">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="font-size:11px;font-weight:700;color:${st.color};background:${st.bg};border-radius:6px;padding:3px 10px;">${esc(col.label)}</div>
+            <span style="font-size:10px;color:var(--t3);font-weight:600;">${colPosts.length}</span>
+          </div>
+          <div style="flex:1;overflow-y:auto;max-height:calc(100vh - 160px);">
+            ${colPosts.length===0?`<div style="border:1.5px dashed var(--b);border-radius:8px;padding:20px 12px;text-align:center;font-size:11px;color:var(--t3);">Vazio</div>`
+            :colPosts.map(p=>{
+              const ch=(p.channels||[])[0];const pl=ch?gplat(ch):null;
+              const dateStr=p.scheduledAt?p.scheduledAt.slice(0,10):'';
+              return`<div data-kb-post="${p.id}" style="${cardStyle}">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                  ${pl?`<div style="width:20px;height:20px;border-radius:50%;background:${pl.grad};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${platLogo(pl.id,10)}</div>`:''}
+                  <div style="font-size:11px;font-weight:600;color:var(--t1);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.claudeTitle||p.text||'Sem título')}</div>
+                </div>
+                <div style="font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc((p.text||'').slice(0,60))}</div>
+                ${p.driveLink?`<div style="margin-top:6px;font-size:10px;"><a href="${esc(p.driveLink)}" target="_blank" rel="noopener" style="color:var(--ac);font-weight:600;">Ver arte no Drive</a></div>`:''}
+                ${dateStr?`<div style="margin-top:4px;font-size:10px;color:var(--t3);">📅 ${dateStr}</div>`:''}
+                ${p.claudeBriefing?`<div style="margin-top:6px;font-size:10px;color:var(--t3);background:var(--s2);border-radius:5px;padding:5px 7px;line-height:1.4;max-height:52px;overflow:hidden;">📋 ${esc(p.claudeBriefing.slice(0,120))}${p.claudeBriefing.length>120?'…':''}</div>`:''}
+                ${p.status==='pending'&&isGestor?`<div style="display:flex;gap:5px;margin-top:8px;">
+                  <button data-action="soc-approve-post" data-pid="${p.id}" style="flex:1;background:#7c3aed;color:#fff;border:none;border-radius:5px;padding:4px;font-size:10px;font-weight:700;cursor:pointer;">Aprovar</button>
+                  <button data-action="soc-reject-post" data-pid="${p.id}" style="flex:1;background:var(--s2);color:#dc2626;border:1px solid #fca5a5;border-radius:5px;padding:4px;font-size:10px;font-weight:700;cursor:pointer;">Recusar</button>
+                </div>`:''}
+                ${p.status==='failed'?`<div style="margin-top:6px;font-size:10px;color:#dc2626;font-weight:600;">❌ ${esc((p.failReason||'').slice(0,60))}</div>`:''}
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
 
 function socCalendar(){
   const now=new Date();
@@ -5752,7 +5897,25 @@ function socCalendar(){
 
   const stColors={ideas:'#6366f1',briefing:'#f59e0b',production:'#3b82f6',approval:'#8b5cf6',scheduled:'#10b981',published:'#059669'};
 
+  const pendingPosts=(S.social_posts||[]).filter(p=>p.status==='pending');
+  const isGestor=AUTH.session?.role==='admin'||AUTH.session?.role==='gestor';
+  const pendingSection=pendingPosts.length&&isGestor?`<div style="padding:12px 20px;background:#faf5ff;border-bottom:1px solid #e9d5ff;flex-shrink:0;">
+    <div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px;">Aguardando sua aprovação (${pendingPosts.length})</div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      ${pendingPosts.map(p=>{const ch=(p.channels||[])[0];const pl=ch?gplat(ch):null;return`<div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e9d5ff;border-radius:8px;padding:8px 12px;">
+        ${pl?`<div style="width:28px;height:28px;border-radius:50%;background:${pl.grad};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${platLogo(pl.id,14)}</div>`:''}
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.text||'Post sem texto')}</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:1px;">${p.scheduledAt?p.scheduledAt.slice(0,16).replace('T',' '):'Sem data'} ${p.driveLink?`· <a href="${esc(p.driveLink)}" target="_blank" rel="noopener" style="color:var(--ac);">Ver arte</a>`:''}</div>
+        </div>
+        <button data-action="soc-approve-post" data-pid="${p.id}" style="background:#7c3aed;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">Aprovar</button>
+        <button data-action="soc-reject-post" data-pid="${p.id}" style="background:var(--s2);color:#dc2626;border:1px solid #fca5a5;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">Recusar</button>
+      </div>`;}).join('')}
+    </div>
+  </div>`:'';
+
   return`<div style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+    ${pendingSection}
     <div style="padding:10px 20px;background:var(--s1);border-bottom:1px solid var(--b);display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;">
       <button data-action="soc-cal-prev" style="background:var(--s2);border:1px solid var(--b);border-radius:7px;color:var(--t2);width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">‹</button>
       <div style="font-size:13px;font-weight:700;color:var(--t1);min-width:150px;text-align:center;">${months[m]} ${y}</div>
@@ -5791,6 +5954,45 @@ function socCalendar(){
       </div>
     </div>
   </div>`;
+}
+
+async function fetchMetaAnalytics(acc, period){
+  // period: 'last_7d' | 'last_30d' | 'last_90d'
+  if(!acc||!acc.accessToken||!acc.platformId)return null;
+  const days={'last_7d':7,'last_30d':30,'last_90d':90}[period]||30;
+  const until=Math.floor(Date.now()/1000);
+  const since=until-days*86400;
+  const igId=acc.platformId;
+  const token=acc.accessToken;
+  // Fields: impressions, reach, follower_count, likes via media insights aggregation
+  // Use /{ig-user-id}?fields=followers_count,media_count for account-level
+  try{
+    const [profileRes, mediaRes]=await Promise.all([
+      fetch(`https://graph.facebook.com/v19.0/${igId}?fields=followers_count,media_count,username&access_token=${token}`),
+      fetch(`https://graph.facebook.com/v19.0/${igId}/media?fields=id,like_count,comments_count,timestamp&since=${since}&until=${until}&limit=50&access_token=${token}`)
+    ]);
+    const profile=await profileRes.json();
+    const media=await mediaRes.json();
+    if(profile.error||media.error)return{error:profile.error?.message||media.error?.message};
+    const posts=media.data||[];
+    const totalLikes=posts.reduce((a,p)=>a+(p.like_count||0),0);
+    const totalComments=posts.reduce((a,p)=>a+(p.comments_count||0),0);
+    // Insights endpoint for reach/impressions on account level
+    let reach=null,impressions=null;
+    try{
+      const insRes=await fetch(`https://graph.facebook.com/v19.0/${igId}/insights?metric=impressions,reach&period=day&since=${since}&until=${until}&access_token=${token}`);
+      const ins=await insRes.json();
+      if(!ins.error&&ins.data){
+        const sumVals=arr=>(arr||[]).reduce((a,v)=>a+v,0);
+        (ins.data||[]).forEach(d=>{
+          const vals=d.values?.map(v=>v.value)||[];
+          if(d.name==='impressions')impressions=sumVals(vals);
+          if(d.name==='reach')reach=sumVals(vals);
+        });
+      }
+    }catch(_){}
+    return{followers:profile.followers_count,mediaCount:profile.media_count,username:profile.username,likes:totalLikes,comments:totalComments,posts:posts.length,reach,impressions,period,fetched:Date.now()};
+  }catch(e){return{error:e.message};}
 }
 
 function socAnalytics(){
@@ -6099,9 +6301,49 @@ function socAnalytics(){
     {label:'Shares',key:'shares'},{label:'Subs +',key:'subscribers_gained'},{label:'Min. Watch',key:'estimated_minutes_watched'},
   ]);
 
+  // Meta Graph API panel (for accounts with accessToken configured)
+  const connectedAccs=(S.social_accounts||[]).filter(a=>a.accessToken&&a.platformId&&(a.platform==='instagram'||a.platform==='facebook'));
+  let metaPanel='';
+  if(connectedAccs.length){
+    const cache=S.meta_analytics_cache||{};
+    const currentPeriod=S.windsor_period||'last_30d';
+    const metaCards=connectedAccs.map(acc=>{
+      const ckey=acc.id+'_'+currentPeriod;
+      const d=cache[ckey];
+      if(!d){
+        return`<div style="border:1px solid var(--b);border-radius:10px;padding:16px;background:var(--s2);min-width:200px;">
+          <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:8px;">${esc(acc.name||acc.handle||acc.platform)}</div>
+          <div style="font-size:11px;color:var(--t3);">Clique em Atualizar para buscar dados via Meta API</div>
+          <button data-action="meta-fetch-acc" data-acc-id="${esc(acc.id)}" style="margin-top:10px;background:var(--ac);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;">Buscar</button>
+        </div>`;
+      }
+      if(d.error){
+        return`<div style="border:1px solid #fecaca;border-radius:10px;padding:16px;background:#fef2f2;min-width:200px;">
+          <div style="font-size:12px;font-weight:700;color:#991b1b;margin-bottom:6px;">${esc(acc.name||acc.platform)}</div>
+          <div style="font-size:11px;color:#7f1d1d;">${esc(d.error)}</div>
+        </div>`;
+      }
+      return`<div style="border:1px solid var(--b);border-radius:10px;padding:16px;background:var(--bg);min-width:220px;">
+        <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+          <span style="background:#e1306c;color:#fff;border-radius:4px;padding:2px 6px;font-size:10px;">${acc.platform==='instagram'?'IG':'FB'}</span>
+          ${esc(d.username?'@'+d.username:acc.name||acc.handle||'')}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          ${[['Seguidores',fmt(d.followers)],['Posts',fmt(d.posts)],['Curtidas',fmt(d.likes)],['Comentários',fmt(d.comments)],['Alcance',fmt(d.reach)],['Impressões',fmt(d.impressions)]].map(([l,v])=>`<div><div style="font-size:10px;color:var(--t3);">${l}</div><div style="font-size:14px;font-weight:700;color:var(--t1);">${v}</div></div>`).join('')}
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:var(--t3);">Atualizado ${new Date(d.fetched).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+      </div>`;
+    }).join('');
+    metaPanel=`<div style="margin-bottom:28px;">
+      <div class="dash-section-label" style="margin-bottom:12px;">Contas Conectadas — Meta API</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;">${metaCards}</div>
+    </div>`;
+  }
+
   return`<div class="dash-wrap">
     ${header}
     ${errBanner}
+    ${metaPanel}
     ${kpiSection}
     ${charts}
     <div class="dash-section-label" style="margin-bottom:16px;">Por Conta</div>
@@ -7089,10 +7331,11 @@ function renderAssets(){
 
 function socMain(){
   const v=S.social_view;
-  const views=[{id:'dashboard',label:'Dashboard'},{id:'schedule',label:'Agendar Post'},{id:'calendar',label:'Calendário'}];
+  const views=[{id:'dashboard',label:'Dashboard'},{id:'schedule',label:'Programar'},{id:'calendar',label:'Calendário'}];
   return`<div style="display:flex;align-items:center;padding:0 20px;background:var(--s1);border-bottom:1px solid var(--b);flex-shrink:0;height:42px;gap:0;">
     ${views.map(vi=>`<button data-soc-view="${vi.id}" style="padding:0 15px;height:100%;border:none;background:none;color:${v===vi.id?'var(--ac)':'var(--t3)'};font-size:12px;font-weight:700;cursor:pointer;border-bottom:2px solid ${v===vi.id?'var(--ac)':'transparent'};font-family:inherit;transition:.12s;">${esc(vi.label)}</button>`).join('')}
     <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+      ${v==='schedule'?`<button data-action="open-claude-import" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:7px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;">✦ Importar do Claude</button>`:''}
       <span style="font-size:11px;color:var(--t3);">${S.social_accounts.length} conta${S.social_accounts.length!==1?'s':''} conectada${S.social_accounts.length!==1?'s':''}</span>
       <button data-action="soc-open-profiles" style="background:var(--ac);color:#fff;border:none;border-radius:7px;padding:5px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;">👤 Perfis</button>
     </div>
@@ -9067,6 +9310,18 @@ function bind(){
     S.windsor_period=btn.dataset.windsorPeriod;fetchWindsorData();
   }));
 
+  // Meta API — buscar analytics por conta
+  r.querySelectorAll('[data-action="meta-fetch-acc"]').forEach(btn=>btn.addEventListener('click',async()=>{
+    const acc=(S.social_accounts||[]).find(a=>a.id===btn.dataset.accId);
+    if(!acc)return;
+    btn.disabled=true;btn.textContent='Buscando...';
+    const period=S.windsor_period||'last_30d';
+    const result=await fetchMetaAnalytics(acc,period);
+    if(!S.meta_analytics_cache)S.meta_analytics_cache={};
+    S.meta_analytics_cache[acc.id+'_'+period]=result||{error:'Sem dados'};
+    render();
+  }));
+
   // Config — editar projeto fixo (cor)
   r.querySelectorAll('.cfg-fproj-save').forEach(btn=>btn.addEventListener('click',()=>{
     const name=btn.dataset.name;
@@ -9328,7 +9583,10 @@ function bind(){
     const handle=(document.getElementById('soc-acc-handle')?.value||'').trim();
     const followers=document.getElementById('soc-acc-followers')?.value||'';
     const engagement=document.getElementById('soc-acc-engagement')?.value||'';
-    S.social_accounts.push({id:uid(),platform:socSaveAcc.dataset.plat,accountName:name,handle,followers:followers?Number(followers):0,engagement:engagement?Number(engagement):0,connected:true});
+    const accessToken=(document.getElementById('soc-acc-token')?.value||'').trim();
+    const platformId=(document.getElementById('soc-acc-igid')?.value||'').trim();
+    const tokenExpiry=(document.getElementById('soc-acc-token-expiry')?.value||'').trim();
+    S.social_accounts.push({id:uid(),platform:socSaveAcc.dataset.plat,accountName:name,handle,followers:followers?Number(followers):0,engagement:engagement?Number(engagement):0,connected:true,accessToken,platformId,tokenExpiry});
     save_soc_acc();S.modal_soc={open:false,platform:null};render();
   });
 
@@ -9356,8 +9614,36 @@ function bind(){
   if(socMediaFile)socMediaFile.addEventListener('change',e=>{if(e.target.files[0])S.schedule_form.mediaName=e.target.files[0].name;});
 
   // Clear schedule form
+  // Carregar post aprovado do kanban no formulário de agendamento
+  r.querySelectorAll('[data-action="soc-load-approved"]').forEach(btn=>btn.addEventListener('click',()=>{
+    const p=(S.social_posts||[]).find(x=>x.id===btn.dataset.pid);
+    if(!p)return;
+    S.schedule_form={
+      _fromPostId:p.id,
+      profiles:[...(p.profiles||[])],
+      channels:[...(p.channels||[])],
+      text:p.text||'',
+      hashtags:p.hashtags||'',
+      mediaName:p.mediaName||'',
+      driveLink:p.driveLink||'',
+      claudeTitle:p.claudeTitle||'',
+      claudeBriefing:p.claudeBriefing||'',
+      date:p.scheduledAt?new Date(p.scheduledAt).toISOString().slice(0,10):'',
+      time:p.scheduledAt?new Date(p.scheduledAt).toTimeString().slice(0,5):'18:00',
+      postStatus:'scheduled',
+      contentTypes:{},igFormat:'Feed',firstComment:'',altText:'',location:'',tags:'',
+      collabUser:'',paidPartnership:'',shopTag:'',disableComments:false,
+      shareToFacebook:false,shareToFeed:false,peopleTags:'',storyLink:'',isTest:false
+    };
+    render();
+  }));
+
+  // Ir para o kanban de criação de conteúdo
+  const goKanbanBtn=r.querySelector('[data-action="go-content-kanban"]');
+  if(goKanbanBtn)goKanbanBtn.addEventListener('click',()=>{S.pipe='content';S.view='social-kanban';render();});
+
   const socClear=r.querySelector('[data-action="soc-clear-form"]');
-  if(socClear)socClear.addEventListener('click',()=>{S.schedule_form={profiles:[],channels:[],text:'',hashtags:'',mediaName:'',date:'',time:'18:00',postStatus:'draft',contentTypes:{},igFormat:'Feed',firstComment:'',altText:'',location:'',tags:'',collabUser:'',paidPartnership:'',shopTag:'',disableComments:false,shareToFacebook:false,shareToFeed:false,peopleTags:'',storyLink:'',isTest:false};S.soc_adv_open=false;render();});
+  if(socClear)socClear.addEventListener('click',()=>{S.schedule_form={profiles:[],channels:[],text:'',hashtags:'',mediaName:'',driveLink:'',date:'',time:'18:00',postStatus:'draft',contentTypes:{},igFormat:'Feed',firstComment:'',altText:'',location:'',tags:'',collabUser:'',paidPartnership:'',shopTag:'',disableComments:false,shareToFacebook:false,shareToFeed:false,peopleTags:'',storyLink:'',isTest:false,claudeTitle:'',claudeBriefing:''};S.soc_adv_open=false;render();});
 
   // Toggle advanced settings
   const socAdvBtn=r.querySelector('[data-action="soc-toggle-adv"]');
@@ -9416,6 +9702,7 @@ function bind(){
       alert(`${invalidProfiles.length} perfil(s) selecionado(s) não está(ão) mais conectado(s). Revise a seleção.`);return;
     }
     if(!f.text?.trim()&&!f.mediaName){alert('Adicione um texto ou mídia ao post.');return;}
+    if(f.postStatus==='pending'&&!f.driveLink?.trim()){alert('O link da arte no Drive é obrigatório antes de enviar para aprovação.');return;}
     if(f.postStatus==='scheduled'&&!f.date){alert('Informe a data de publicação.');return;}
     // Validar que data agendada não está no passado
     if(f.postStatus==='scheduled'&&f.date){
@@ -9430,8 +9717,12 @@ function bind(){
       text:f.text||'',
       hashtags:f.hashtags||'',
       mediaName:f.mediaName||'',
+      driveLink:f.driveLink||'',
+      claudeTitle:f.claudeTitle||'',
+      claudeBriefing:f.claudeBriefing||'',
       scheduledAt:f.date&&f.time?`${f.date}T${f.time}`:f.date||'',
       status:f.postStatus||'draft',
+      retryCount:0,
       contentTypes:{...(f.contentTypes||{})},
       // Avançados
       igFormat:f.igFormat||'Feed',
@@ -9452,10 +9743,36 @@ function bind(){
     });
     save_soc_post();
     // Reset completo do form
-    S.schedule_form={profiles:[],channels:[],text:'',hashtags:'',mediaName:'',date:'',time:'18:00',postStatus:'draft',contentTypes:{},igFormat:'Feed',firstComment:'',altText:'',location:'',tags:'',collabUser:'',paidPartnership:'',shopTag:'',disableComments:false,shareToFacebook:false,shareToFeed:false,peopleTags:'',storyLink:'',isTest:false};
+    S.schedule_form={profiles:[],channels:[],text:'',hashtags:'',mediaName:'',driveLink:'',date:'',time:'18:00',postStatus:'draft',contentTypes:{},igFormat:'Feed',firstComment:'',altText:'',location:'',tags:'',collabUser:'',paidPartnership:'',shopTag:'',disableComments:false,shareToFacebook:false,shareToFeed:false,peopleTags:'',storyLink:'',isTest:false,claudeTitle:'',claudeBriefing:''};
     S.soc_adv_open=false;
     render();
   });
+
+  // Claude Cowork import modal
+  const openClaudeImport=r.querySelector('[data-action="open-claude-import"]');
+  if(openClaudeImport)openClaudeImport.addEventListener('click',()=>{S.modal_claude_import={open:true};render();});
+  document.querySelector('[data-action="close-claude-import"]')?.addEventListener('click',()=>{S.modal_claude_import={open:false};render();});
+  document.querySelector('[data-action="confirm-claude-import"]')?.addEventListener('click',()=>{
+    const raw=(document.getElementById('claude-import-json')?.value||'').trim();
+    const errEl=document.getElementById('claude-import-error');
+    try{
+      const d=JSON.parse(raw);
+      S.schedule_form.text=d.caption||d.text||S.schedule_form.text;
+      S.schedule_form.hashtags=d.hashtags||S.schedule_form.hashtags;
+      S.schedule_form.driveLink=d.driveLink||S.schedule_form.driveLink;
+      S.schedule_form.claudeTitle=d.title||'';
+      S.schedule_form.claudeBriefing=d.briefing||'';
+      S.modal_claude_import={open:false};
+      render();
+      showToast('Importado do Claude Cowork','ok');
+    }catch(e){
+      if(errEl){errEl.style.display='block';errEl.textContent='JSON inválido. Verifique o formato e tente novamente.';}
+    }
+  });
+
+  // Drive link field sync
+  const driveLinkEl=r.querySelector('#soc-drive-link');
+  if(driveLinkEl)driveLinkEl.addEventListener('input',()=>{S.schedule_form.driveLink=driveLinkEl.value;});
 
   // Competitors
   const socAddComp=r.querySelector('[data-action="soc-add-comp"]');
@@ -9538,6 +9855,35 @@ function bind(){
   }));
   r.querySelectorAll('[data-cal-card]').forEach(chip=>chip.addEventListener('click',()=>{
     S.pipe='content';S.modal={open:true,id:chip.dataset.calCard,tab:'basic'};render();
+  }));
+
+  // Aprovação/rejeição de posts pelo gestor
+  r.querySelectorAll('[data-action="soc-approve-post"]').forEach(btn=>btn.addEventListener('click',()=>{
+    const p=(S.social_posts||[]).find(x=>x.id===btn.dataset.pid);
+    if(!p)return;
+    if(!p.scheduledAt){alert('Defina a data de publicação antes de aprovar.');return;}
+    p.status='approved';
+    p.approvedBy=AUTH.session?.name||AUTH.session?.email||'gestor';
+    p.approvedAt=Date.now();
+    save_soc_post();
+    showToast('Post aprovado e agendado','ok');
+    render();
+  }));
+  r.querySelectorAll('[data-action="soc-reject-post"]').forEach(btn=>btn.addEventListener('click',()=>{
+    const p=(S.social_posts||[]).find(x=>x.id===btn.dataset.pid);
+    if(!p)return;
+    const comment=window.prompt('Motivo da recusa (obrigatório):','');
+    if(comment===null)return; // cancelado
+    if(!comment.trim()){alert('O motivo da recusa é obrigatório.');return;}
+    p.status='in_production';
+    p.rejectedBy=AUTH.session?.name||AUTH.session?.email||'gestor';
+    p.rejectedAt=Date.now();
+    p.rejectedComment=comment.trim();
+    if(!p.history)p.history=[];
+    p.history.push({ts:Date.now(),user:AUTH.session?.name||'gestor',action:'rejeitado',comment:comment.trim()});
+    save_soc_post();
+    showToast('Post devolvido para ajuste (Em produção)','ok');
+    render();
   }));
 
   // ── BIBLIOTECA DE ASSETS ────────────────────────────────────────────
@@ -10162,17 +10508,18 @@ function bind(){
   const portalAddItem=r.querySelector('[data-action="portal-add-item"]');
   if(portalAddItem)portalAddItem.addEventListener('click',()=>{
     const p=(_pc().portals||[]).find(x=>x.id===_peid());
-    if(p){if(!p.items)p.items=[];p.items.push({icon:'🔗',title:'Novo item',links:[{label:'',url:''}],desc:'',color:p.color||'#1c1c1c'});render();}
+    if(p){syncPortalFormToState();if(!p.items)p.items=[];p.items.push({icon:'🔗',title:'Novo item',links:[{label:'',url:''}],desc:'',color:p.color||'#1c1c1c'});render();}
   });
   r.querySelectorAll('[data-action="portal-del-item"]').forEach(btn=>btn.addEventListener('click',()=>{
     const ii=parseInt(btn.dataset.ii);
     const p=(_pc().portals||[]).find(x=>x.id===_peid());
-    if(p&&p.items&&!isNaN(ii)){p.items.splice(ii,1);render();}
+    if(p&&p.items&&!isNaN(ii)){syncPortalFormToState();p.items.splice(ii,1);render();}
   }));
   r.querySelectorAll('[data-action="portal-add-sec-item"]').forEach(btn=>btn.addEventListener('click',()=>{
     const si=parseInt(btn.dataset.si);
     const p=(_pc().portals||[]).find(x=>x.id===_peid());
     if(p&&p.sections&&p.sections[si]){
+      syncPortalFormToState();
       if(!p.sections[si].items)p.sections[si].items=[];
       p.sections[si].items.push({icon:'🔗',title:'Novo item',links:[{label:'',url:''}],desc:'',color:p.color||'#1c1c1c'});
       render();
@@ -10182,6 +10529,7 @@ function bind(){
     const si=parseInt(btn.dataset.si);const ii=parseInt(btn.dataset.ii);
     const p=(_pc().portals||[]).find(x=>x.id===_peid());
     if(p&&p.sections&&p.sections[si]&&p.sections[si].items&&!isNaN(ii)){
+      syncPortalFormToState();
       const items=p.sections[si].items;
       const removed=items[ii];
       items.splice(ii,1);render();
@@ -10968,6 +11316,42 @@ function dnd2(r){
   });
 }
 
+// Página pública: ?view=request-status&code=XXX (sem login)
+(function(){
+  const _up=new URLSearchParams(location.search);
+  if(_up.get('view')==='request-status'){
+    const _code=(_up.get('code')||'').trim().toUpperCase();
+    const root=document.getElementById('root');
+    root.innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f8fafc;font-family:system-ui,sans-serif;"><div style="background:#fff;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,.08);padding:40px 32px;max-width:480px;width:100%;text-align:center"><img src="" onerror="this.style.display=\'none\'" style="height:36px;margin-bottom:20px"><h2 style="margin:0 0 8px;font-size:20px;color:#1e293b">Status da Solicitação</h2><p style="margin:0 0 24px;color:#64748b;font-size:14px">Código: <strong style="color:#0f172a">'+(escHtml(_code)||'—')+'</strong></p><div id="pub-status-body" style="color:#64748b;font-size:14px">Buscando...</div></div></div>';
+    function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+    if(!_code){document.getElementById('pub-status-body').innerHTML='<span style="color:#ef4444">Código não informado.</span>';return;}
+    // Aguarda Firebase inicializar (max 8s)
+    let _waited=0;
+    const _tick=setInterval(()=>{
+      _waited+=200;
+      if(_waited>8000){clearInterval(_tick);document.getElementById('pub-status-body').innerHTML='<span style="color:#ef4444">Não foi possível conectar. Tente novamente.</span>';return;}
+      if(typeof _db==='undefined')return;
+      clearInterval(_tick);
+      _db.collection('state').get().then(snap=>{
+        let found=null;
+        snap.forEach(doc=>{
+          const d=doc.data();
+          (d.requests||[]).forEach(r=>{if((r.code||'').toUpperCase()===_code)found=r;});
+        });
+        const el=document.getElementById('pub-status-body');
+        if(!el)return;
+        if(!found){el.innerHTML='<span style="color:#ef4444">Solicitação não encontrada. Verifique o código.</span>';return;}
+        const ST_LABELS={triage:'Triagem',cri_todo:'A fazer','cri-todo':'A fazer',progress:'Em andamento',waiting:'Aguardando',approval:'Aguardando aprovação',print:'Para impressão',standby:'Em espera',done:'Concluído'};
+        const STATUS_COLOR={done:'#16a34a',progress:'#2563eb',approval:'#d97706',standby:'#6366f1',triage:'#64748b'};
+        const label=ST_LABELS[found.status]||found.status||'—';
+        const color=STATUS_COLOR[found.status]||'#64748b';
+        el.innerHTML=`<div style="margin-bottom:16px"><span style="display:inline-block;padding:6px 18px;border-radius:999px;background:${color}18;color:${color};font-weight:600;font-size:15px">${label}</span></div><table style="width:100%;text-align:left;font-size:13px;border-collapse:collapse">${[['Título',found.requestTitle||'—'],['Tipo',found.orderType||'—'],['Solicitante',found.nome||'—'],['Área',found.setor||'—'],['Prazo desejado',found.desiredDate||'—']].map(([k,v])=>`<tr><td style="padding:6px 8px;color:#94a3b8;white-space:nowrap">${k}</td><td style="padding:6px 8px;color:#0f172a">${v}</td></tr>`).join('')}</table>`;
+      }).catch(()=>{const el=document.getElementById('pub-status-body');if(el)el.innerHTML='<span style="color:#ef4444">Erro ao buscar. Tente novamente.</span>';});
+    },200);
+    return; // não inicializa o resto do app
+  }
+})();
+
 document.getElementById('root').innerHTML=
   '<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);"><div style="color:var(--t3);font-size:13px;letter-spacing:.5px;">Carregando...</div></div>';
 
@@ -11007,7 +11391,7 @@ document.getElementById('root').innerHTML=
         // Limpa o ?req= da URL sem reload
         try{history.replaceState(null,'',location.pathname+location.hash);}catch(e){}
         S.pipe='requests';
-        showToast('Nova solicitação recebida via formulário externo!','ok');
+        showToast(`Nova solicitação recebida! Código: ${newReq.code}`,'ok');
       }
     }
   }catch(e){console.error('req param:',e);}
@@ -11018,6 +11402,151 @@ window.addEventListener('focus',()=>{
   if(AUTH.showLogin)return;
   load().then(()=>render());
 });
+
+// ═══════════════════════════════════════════════════════════════════
+// ENGINE DE PUBLICAÇÃO AUTOMÁTICA
+// Requisito: access token válido na conta conectada.
+// Para Instagram/Facebook: image_url deve ser URL pública acessível.
+// Limitação: Google Drive links não são URLs públicas diretas —
+// substituir por URL de CDN ou storage público para publicação real.
+// ═══════════════════════════════════════════════════════════════════
+
+async function publishToInstagram(acc, post) {
+  const igUserId = acc.platformId;
+  const token = acc.accessToken;
+  if (!igUserId || !token) throw new Error('Instagram: platformId e accessToken obrigatórios.');
+  const caption = [post.text, post.hashtags].filter(Boolean).join('\n\n');
+  // Step 1: create media container
+  const createRes = await fetch(`https://graph.facebook.com/v19.0/${igUserId}/media`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({image_url: post.driveLink, caption, access_token: token}),
+  });
+  const createData = await createRes.json();
+  if (createData.error) throw new Error('IG create: ' + createData.error.message);
+  // Step 2: publish
+  const pubRes = await fetch(`https://graph.facebook.com/v19.0/${igUserId}/media_publish`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({creation_id: createData.id, access_token: token}),
+  });
+  const pubData = await pubRes.json();
+  if (pubData.error) throw new Error('IG publish: ' + pubData.error.message);
+  return pubData.id;
+}
+
+async function publishToFacebook(acc, post) {
+  const pageId = acc.platformId;
+  const token = acc.accessToken;
+  if (!pageId || !token) throw new Error('Facebook: platformId e accessToken obrigatórios.');
+  const message = [post.text, post.hashtags].filter(Boolean).join('\n\n');
+  const body = {message, access_token: token};
+  if (post.driveLink) body.link = post.driveLink;
+  const res = await fetch(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (data.error) throw new Error('FB: ' + data.error.message);
+  return data.id;
+}
+
+async function publishToTikTok(acc, post) {
+  const openId = acc.platformId;
+  const token = acc.accessToken;
+  if (!openId || !token) throw new Error('TikTok: platformId (open_id) e accessToken obrigatórios.');
+  // TikTok Content Posting API — direct post
+  const res = await fetch('https://open.tiktokapis.com/v2/post/publish/content/init/', {
+    method: 'POST',
+    headers: {'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json; charset=UTF-8'},
+    body: JSON.stringify({
+      post_info: {title: post.text?.slice(0, 150) || '', privacy_level: 'PUBLIC_TO_EVERYONE',
+        disable_comment: post.disableComments || false},
+      source_info: {source: 'PULL_FROM_URL', video_url: post.driveLink},
+    }),
+  });
+  const data = await res.json();
+  if (data.error?.code && data.error.code !== 'ok') throw new Error('TikTok: ' + JSON.stringify(data.error));
+  return data.data?.publish_id;
+}
+
+async function publishPost(post) {
+  const errors = [];
+  const platforms = post.channels || [];
+  const accs = S.social_accounts || [];
+  let anySuccess = false;
+
+  for (const platform of platforms) {
+    const acc = accs.find(a => a.platform === platform && (post.profiles || []).includes(a.id));
+    if (!acc) { errors.push(`${platform}: conta não encontrada`); continue; }
+    try {
+      if (platform === 'instagram') await publishToInstagram(acc, post);
+      else if (platform === 'facebook') await publishToFacebook(acc, post);
+      else if (platform === 'tiktok') await publishToTikTok(acc, post);
+      else { errors.push(`${platform}: plataforma não suportada para publicação automática`); continue; }
+      anySuccess = true;
+    } catch (e) {
+      errors.push(`${platform}: ${e.message}`);
+    }
+  }
+  if (!anySuccess && errors.length) throw new Error(errors.join(' | '));
+  return errors; // partial errors (some platforms succeeded, some failed)
+}
+
+let _pubSchedulerRunning = false;
+
+async function runPublicationScheduler() {
+  if (_pubSchedulerRunning) return;
+  _pubSchedulerRunning = true;
+  try {
+    const now = Date.now();
+    const due = (S.social_posts || []).filter(p =>
+      p.status === 'approved' && p.scheduledAt && new Date(p.scheduledAt).getTime() <= now
+    );
+    for (const post of due) {
+      post.status = 'publishing';
+      try {
+        const partialErrors = await publishPost(post);
+        post.status = 'published';
+        post.publishedAt = Date.now();
+        if (partialErrors.length) {
+          post.publishNotes = partialErrors.join(' | ');
+        }
+      } catch (e) {
+        post.retryCount = (post.retryCount || 0) + 1;
+        if (post.retryCount >= 3) {
+          post.status = 'failed';
+          post.failReason = e.message;
+          // Notificar coordenadora
+          const coordinator = (AUTH.users || []).find(u => u.role === 'admin' || u.role === 'coordenador');
+          if (coordinator) {
+            pushNotif('error', `Publicação falhou após 3 tentativas: "${(post.text || 'post').slice(0, 40)}"`,
+              {pipe: 'social', targetUserId: coordinator.id});
+          }
+        } else {
+          post.status = 'approved'; // volta para tentar de novo no próximo ciclo
+          post.lastError = e.message;
+        }
+      }
+      save_soc_post();
+      render();
+    }
+  } finally {
+    _pubSchedulerRunning = false;
+  }
+}
+
+// Inicia o scheduler após o login (60s de intervalo)
+let _pubSchedulerInterval = null;
+function startPublicationScheduler() {
+  if (_pubSchedulerInterval) return;
+  _pubSchedulerInterval = setInterval(runPublicationScheduler, 60_000);
+  runPublicationScheduler(); // executa imediatamente na inicialização
+}
+function stopPublicationScheduler() {
+  if (_pubSchedulerInterval) { clearInterval(_pubSchedulerInterval); _pubSchedulerInterval = null; }
+}
 </script>
 </body>
 </html>

@@ -26,9 +26,11 @@ const SECURITY_HEADERS = {
   'Permissions-Policy':        'camera=(), microphone=(), geolocation=()',
 };
 
+let httpsActive = false;
+
 function handler(req, res) {
-  // Redireciona HTTP → HTTPS
-  if (!req.socket.encrypted) {
+  // Redireciona HTTP → HTTPS apenas quando HTTPS estiver ativo
+  if (httpsActive && !req.socket.encrypted) {
     const host = (req.headers.host || `localhost:${HTTPS_PORT}`).replace(`:${HTTP_PORT}`, `:${HTTPS_PORT}`);
     res.writeHead(301, { Location: `https://${host}${req.url}` });
     res.end();
@@ -65,6 +67,7 @@ if (fs.existsSync(certKey) && fs.existsSync(certFile)) {
   };
 
   // Servidor HTTPS principal
+  httpsActive = true;
   https.createServer(sslOptions, handler).listen(HTTPS_PORT, () => {
     console.log(`✅ HTTPS ativo em https://localhost:${HTTPS_PORT}`);
   });

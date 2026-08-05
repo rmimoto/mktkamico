@@ -6,6 +6,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", "-p", "3030", "D:/Downloads/10_IA"],
       "port": 3030
+    },
+    {
+      "name": "influencers-frontend",
+      "runtimeExecutable": "D:/Downloads/10_IA/influencers-app/frontend/node_modules/.bin/next.cmd",
+      "runtimeArgs": ["dev", "D:/Downloads/10_IA/influencers-app/frontend"],
+      "port": 3000
     }
   ]
 }
