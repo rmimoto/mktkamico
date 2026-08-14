@@ -1282,7 +1282,40 @@ async function load(){
     }
   }catch(e){console.error('load:',e);}
   // Init portal-dist content if empty
-  if(!S.portal_dist_content||!Array.isArray(S.portal_dist_content.portals))S.portal_dist_content={portals:[]};
+  if(!S.portal_dist_content||!Array.isArray(S.portal_dist_content.portals)||S.portal_dist_content.portals.length===0)S.portal_dist_content={portals:[
+    {id:'distribuidor',name:'Central do Distribuidor',description:'Recursos, catálogos, tabelas de preço e canais de atendimento para distribuidores KAMI CO.',icon:'🏪',color:'#0369a1',sections:[
+      {id:'atend',title:'Cadastro e Atendimento',items:[
+        {icon:'📋',title:'Cadastro de Novo Distribuidor',desc:'Formulário de cadastro para novos distribuidores.',url:'',color:'#0369a1'},
+        {icon:'📞',title:'Canais de Atendimento',desc:'Fale com o time comercial KAMI CO.',url:'',color:'#0369a1'}
+      ]},
+      {id:'catalogo',title:'Catálogos e Portfólio',items:[
+        {icon:'📁',title:'Catálogo Geral KAMI CO.',desc:'Portfólio completo de produtos.',url:'',color:'#c8192b'},
+        {icon:'📁',title:'Catálogo Balens',desc:'',url:'',color:'#c8192b'},
+        {icon:'📁',title:'Catálogo The Smooth Edit',desc:'',url:'',color:'#c8192b'},
+        {icon:'📁',title:'Catálogo Toctus',desc:'',url:'',color:'#c8192b'}
+      ]},
+      {id:'tabela',title:'Tabelas de Preço',items:[
+        {icon:'📊',title:'Tabela de Preço — Brasil',desc:'',url:'',color:'#166534'},
+        {icon:'📊',title:'Tabela de Preço — Portugal',desc:'',url:'',color:'#166534'},
+        {icon:'📊',title:'Tabela de Preço — E-commerce',desc:'',url:'',color:'#166534'}
+      ]},
+      {id:'mkt',title:'Marketing & Trade',items:[
+        {icon:'🎨',title:'Materiais de PDV',desc:'Kit de materiais para ponto de venda.',url:'',color:'#7e22ce'},
+        {icon:'📸',title:'Fotos e Vídeos dos Produtos',desc:'Banco de mídia oficial para uso em lojas e redes sociais.',url:'',color:'#7e22ce'},
+        {icon:'📢',title:'Campanhas e Promoções',desc:'Materiais das campanhas vigentes.',url:'',color:'#7e22ce'},
+        {icon:'📋',title:'Solicitação de Material de MKT',desc:'Solicite materiais personalizados ao time de Marketing.',url:'',color:'#c8192b'}
+      ]},
+      {id:'treinamento',title:'Treinamentos & Educação',items:[
+        {icon:'🎓',title:'Plataforma de Treinamentos',desc:'Acesse os cursos e certificações das marcas KAMI CO.',url:'',color:'#0369a1'},
+        {icon:'📖',title:'Manuais Técnicos dos Produtos',desc:'',url:'',color:'#0369a1'}
+      ]},
+      {id:'fin',title:'Financeiro & Pedidos',items:[
+        {icon:'🛒',title:'Portal de Pedidos',desc:'Acesse o sistema para realizar pedidos.',url:'',color:'#166534'},
+        {icon:'💰',title:'Boletos e Notas Fiscais',desc:'',url:'',color:'#166534'},
+        {icon:'📋',title:'Política Comercial',desc:'Condições, prazos e política de desconto vigente.',url:'',color:'#166534'}
+      ]}
+    ]}
+  ],current:null};
 }
 function save_st_colors(){_fsSaveConfig();}
 function save_col_cols(){try{localStorage.setItem(KEY_COL_COLS,JSON.stringify(S.collapsed_cols));}catch(e){console.error(e);}}
