@@ -565,6 +565,7 @@ body{background:var(--bg);color:var(--t1);font-family:'Inter',-apple-system,Blin
 <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-storage-compat.js"></script>
 <script src="/firebase-config.js"></script>
 </head>
 <body>
@@ -750,8 +751,9 @@ const KEY_RECENT_COLORS = 'kami-mkt-recent-colors-v1';
 // ── Firebase Firestore ───────────────────
 if(!window._FIREBASE_CONFIG)throw new Error('firebase-config.js não carregado. Crie o arquivo a partir de firebase-config.example.js.');
 const _fbApp = firebase.initializeApp(window._FIREBASE_CONFIG);
-const _auth = firebase.auth();
-const _db   = firebase.firestore();
+const _auth    = firebase.auth();
+const _db      = firebase.firestore();
+const _storage = firebase.storage();
 
 // ── Rate Limiting ─────────────────────────
 const _RL_KEY='kami_rl_v1', _RL_MAX=5, _RL_MS=30*60*1000;
@@ -4815,7 +4817,7 @@ function card2(r){
     </div>
     ${r.desiredDate?`<div class="cdates"><div class="cdate">📅 ${fdate(r.desiredDate)}</div></div>`:''}
     ${r.nome?`<div class="cname">👤 ${esc(r.nome)}${r.setor?` · ${esc(r.setor)}`:''}</div>`:''}
-    ${r.attachmentName?`<div class="cclip">📎 ${esc(r.attachmentName)}</div>`:''}
+    ${r.attachmentName?`<div class="cclip">${r.attachmentURL?`<a href="${esc(r.attachmentURL)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">📎 ${esc(r.attachmentName)}</a>`:`📎 ${esc(r.attachmentName)}`}</div>`:''}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
       <div style="display:flex;align-items:center;gap:8px;">
         ${commentCount?`<span style="font-size:10px;color:var(--t3);display:flex;align-items:center;gap:3px;" title="${commentCount} comentário${commentCount>1?'s':''}">💬 ${commentCount}</span>`:''}
@@ -4935,7 +4937,7 @@ function modal2(){
               <div class="detail-row"><div class="detail-label">Data desejada</div><div class="detail-val">${fdatefull(v.desiredDate)}</div></div>
             </div>
             <div class="detail-row"><div class="detail-label">Detalhes da solicitação</div><div class="detail-val" style="white-space:pre-wrap">${esc(v.details)||'—'}</div></div>
-            ${v.attachmentName?`<div class="detail-row"><div class="detail-label">Anexo</div><div class="detail-val">📎 ${esc(v.attachmentName)}</div></div>`:''}
+            ${v.attachmentName?`<div class="detail-row"><div class="detail-label">Anexo</div><div class="detail-val">📎 ${v.attachmentURL?`<a href="${esc(v.attachmentURL)}" target="_blank" rel="noopener" style="color:var(--ac);font-weight:600;text-decoration:none;">${esc(v.attachmentName)} ↗</a>`:esc(v.attachmentName)}</div></div>`:''}
             <div class="detail-row">
               <div class="detail-label">Responsáveis</div>
               <div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0;align-items:center;">
@@ -5098,9 +5100,19 @@ function modal2(){
           <div class="fg"><label>Contexto e detalhes da solicitação <span class="req">*</span></label>
             <textarea name="details" style="min-height:120px;" placeholder="Descreva com o máximo de detalhes o que você precisa — formato, tamanho, objetivo, referências, textos, informações que devem constar..." required>${esc(v.details)}</textarea>
           </div>
-          <div class="fg"><label>Anexo <span style="color:var(--t3);font-size:10px;text-transform:none;letter-spacing:0">(opcional)</span></label>
-            <input type="file" id="req-file" accept="image/*,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,.ai,.psd,.fig">
-            ${v.attachmentName?`<div style="font-size:11px;color:var(--t2);margin-top:4px;">📎 Arquivo atual: ${esc(v.attachmentName)}</div>`:''}
+          <div class="fg"><label>Anexo <span style="color:var(--t3);font-size:10px;text-transform:none;letter-spacing:0">(opcional — máx. 20MB)</span></label>
+            ${S.modal2.attachmentUploading
+              ? `<div style="background:var(--s2);border:1px solid var(--b);border-radius:7px;padding:10px 14px;font-size:12px;color:var(--ac);display:flex;align-items:center;gap:8px;"><span class="ai-spinner" style="width:14px;height:14px;border-width:2px;"></span><span id="req-upload-progress">Enviando…</span></div>`
+              : `<input type="file" id="req-file" accept="image/*,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,.ai,.psd,.fig">`
+            }
+            ${S.modal2.attachmentURL
+              ? `<div style="font-size:11px;color:var(--t2);margin-top:6px;display:flex;align-items:center;gap:6px;">📎 ${esc(S.modal2.attachmentName||v.attachmentName)} <a href="${esc(S.modal2.attachmentURL)}" target="_blank" rel="noopener" style="color:var(--ac);font-weight:600;text-decoration:none;">Abrir ↗</a></div>`
+              : v.attachmentName&&v.attachmentURL
+                ? `<div style="font-size:11px;color:var(--t2);margin-top:6px;display:flex;align-items:center;gap:6px;">📎 ${esc(v.attachmentName)} <a href="${esc(v.attachmentURL)}" target="_blank" rel="noopener" style="color:var(--ac);font-weight:600;text-decoration:none;">Abrir ↗</a></div>`
+                : v.attachmentName
+                  ? `<div style="font-size:11px;color:var(--t3);margin-top:4px;">📎 ${esc(v.attachmentName)}</div>`
+                  : ''
+            }
           </div>
 
         </form>
@@ -7844,13 +7856,53 @@ function bind(){
     // 'edit' abre formulário; qualquer outro vai para view
     S.modal2.tab = b.dataset.mt2 === 'edit' ? 'edit' : b.dataset.mt2;
     render();
-    const fi=document.getElementById('req-file');
-    if(fi)fi.addEventListener('change',e=>{if(e.target.files[0])S.modal2.attachmentName=e.target.files[0].name;});
+    bindReqFileInput();
   }));
 
-  // File input (bind after render)
-  const fi=document.getElementById('req-file');
-  if(fi)fi.addEventListener('change',e=>{if(e.target.files[0])S.modal2.attachmentName=e.target.files[0].name;});
+  // File input — upload para Firebase Storage
+  function bindReqFileInput(){
+    const fi=document.getElementById('req-file');
+    if(!fi||fi._bound)return;
+    fi._bound=true;
+    fi.addEventListener('change',async e=>{
+      const file=e.target.files[0];
+      if(!file)return;
+      const MAX_MB=20;
+      if(file.size>MAX_MB*1024*1024){alert(`Arquivo muito grande. Máximo ${MAX_MB}MB.`);fi.value='';return;}
+      // Mostra progresso
+      const label=fi.closest('label')||fi.parentElement;
+      const origText=label?label.innerText:'';
+      S.modal2.attachmentName=file.name;
+      S.modal2.attachmentUploading=true;
+      S.modal2.attachmentURL='';
+      render();
+      try{
+        const ext=file.name.split('.').pop();
+        const path=`solicitacoes/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const ref=_storage.ref(path);
+        const task=ref.put(file);
+        task.on('state_changed',snap=>{
+          const pct=Math.round(snap.bytesTransferred/snap.totalBytes*100);
+          const el=document.getElementById('req-upload-progress');
+          if(el)el.textContent=`Enviando… ${pct}%`;
+        });
+        await task;
+        const url=await ref.getDownloadURL();
+        S.modal2.attachmentURL=url;
+        S.modal2.attachmentName=file.name;
+        S.modal2.attachmentUploading=false;
+        render();
+        showToast('Arquivo enviado com sucesso','ok');
+      }catch(err){
+        S.modal2.attachmentUploading=false;
+        S.modal2.attachmentName='';
+        S.modal2.attachmentURL='';
+        render();
+        showToast('Erro no upload: '+err.message,'err');
+      }
+    });
+  }
+  bindReqFileInput();
 
   // Close modal 1
   // Fechar modal 1 — verificar se há alterações não salvas
@@ -9025,10 +9077,17 @@ function bind(){
         return;
       }
     }
-    // Attachment name (from state, since file inputs don't persist across re-renders)
-    if(S.modal2.attachmentName)d.attachmentName=S.modal2.attachmentName;
-    else if(!d.attachmentName)d.attachmentName=sav2.dataset.id?
-      (S.requests.find(x=>x.id===sav2.dataset.id)||{}).attachmentName||'':'';
+    // Bloqueia save se upload ainda em andamento
+    if(S.modal2.attachmentUploading){alert('Aguarde o upload do arquivo finalizar.');return;}
+    // Attachment — salva nome e URL do Storage
+    if(S.modal2.attachmentName){
+      d.attachmentName=S.modal2.attachmentName;
+      d.attachmentURL=S.modal2.attachmentURL||'';
+    } else if(!d.attachmentName){
+      const existing=sav2.dataset.id?(S.requests.find(x=>x.id===sav2.dataset.id)||{}):{};
+      d.attachmentName=existing.attachmentName||'';
+      d.attachmentURL=existing.attachmentURL||'';
+    }
 
     const eid2=sav2.dataset.id;
     const me2=AUTH.session||{};
