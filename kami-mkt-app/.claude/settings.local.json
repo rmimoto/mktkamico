@@ -111,7 +111,11 @@
       "Bash(powershell -NoProfile -Command \"Get-NetTCPConnection -LocalPort 3000,8000,3306 -State Listen -ErrorAction SilentlyContinue | Select-Object LocalPort,OwningProcess,State\")",
       "Bash(powershell -NoProfile -Command \"\\(Get-NetTCPConnection -LocalPort 8000 -State Listen\\).OwningProcess\")",
       "Bash(powershell -NoProfile -Command \"Stop-Process -Id 22732 -Force\")",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m 'feat: sistema MKT completo — kanban social, agendamento, analytics Meta API, solicitações externas *)",
+      "Bash(git push *)",
+      "Bash(git rm *)",
+      "Bash(git commit -m 'chore: reorganiza estrutura do repositório *)"
     ]
   }
 }
