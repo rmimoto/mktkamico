@@ -11424,11 +11424,11 @@ function dnd2(r){
       if(_waited>8000){clearInterval(_tick);document.getElementById('pub-status-body').innerHTML='<span style="color:#ef4444">Não foi possível conectar. Tente novamente.</span>';return;}
       if(typeof _db==='undefined')return;
       clearInterval(_tick);
-      _db.collection('state').get().then(snap=>{
+      _db.collection('requests').get().then(snap=>{
         let found=null;
         snap.forEach(doc=>{
           const d=doc.data();
-          (d.requests||[]).forEach(r=>{if((r.code||'').toUpperCase()===_code)found=r;});
+          if((d.code||'').toUpperCase()===_code)found=d;
         });
         const el=document.getElementById('pub-status-body');
         if(!el)return;
@@ -11594,7 +11594,7 @@ async function runPublicationScheduler() {
   try {
     const now = Date.now();
     const due = (S.social_posts || []).filter(p =>
-      p.status === 'approved' && p.scheduledAt && new Date(p.scheduledAt).getTime() <= now
+      ['approved','scheduled'].includes(p.status) && p.scheduledAt && new Date(p.scheduledAt).getTime() <= now
     );
     for (const post of due) {
       post.status = 'publishing';
