@@ -5733,14 +5733,20 @@ function socSchedule(){
         <div style="font-size:28px;color:var(--t3);margin-bottom:8px;">⬆</div>
         <div style="font-size:12px;color:var(--t2);font-weight:600;margin-bottom:3px;">Imagens, vídeos ou documentos</div>
         <div style="font-size:11px;color:var(--t3);margin-bottom:12px;">Envie arquivos de imagem, vídeo, PDF, PPT e Word<br>clicando aqui ou arrastando na janela</div>
-        <label style="display:inline-flex;align-items:center;gap:6px;background:var(--ac);color:#fff;border-radius:7px;padding:7px 18px;font-size:11px;font-weight:700;cursor:pointer;">
-          <input type="file" id="soc-media-file" accept="image/*,video/*,.pdf,.ppt,.pptx,.doc,.docx" style="display:none;">
-          Selecionar arquivo
+        <label style="display:inline-flex;align-items:center;gap:6px;background:${f.mediaUploading?'#64748b':'var(--ac)'};color:#fff;border-radius:7px;padding:7px 18px;font-size:11px;font-weight:700;cursor:${f.mediaUploading?'not-allowed':'pointer'};">
+          <input type="file" id="soc-media-file" accept="image/*,video/*" style="display:none;" ${f.mediaUploading?'disabled':''}>
+          ${f.mediaUploading?'Enviando…':'Selecionar arquivo'}
         </label>
-        ${f.mediaName?`<div style="font-size:10px;color:var(--ac);margin-top:8px;font-weight:600;">📎 ${esc(f.mediaName)}</div>`:''}
+        ${f.mediaUploading?`<div id="soc-upload-progress" style="font-size:11px;color:var(--t3);margin-top:8px;">Enviando… 0%</div>`:''}
+        ${f.mediaName&&!f.mediaUploading?`<div style="font-size:10px;margin-top:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="color:${f.driveLink?'#16a34a':'var(--ac)'};font-weight:600;">
+            ${f.driveLink?'✓':'📎'} ${esc(f.mediaName)}
+          </span>
+          ${f.driveLink?`<span style="font-size:10px;color:#16a34a;">— URL pública gerada</span>`:`<span style="font-size:10px;color:#f59e0b;">processando…</span>`}
+        </div>`:''}
       </div>
 
-      ${secLabel(5,'Link da arte no Drive','<span style="font-size:10px;color:var(--t3);">Obrigatório para enviar à aprovação</span>',false)}
+      ${secLabel(5,'Link da arte (Drive ou URL pública)','<span style="font-size:10px;color:var(--t3);">Preenchido automaticamente ao anexar acima, ou cole uma URL</span>',false)}
       <div style="display:flex;align-items:center;gap:6px;">
         <input type="url" id="soc-drive-link" data-sf="driveLink" value="${esc(f.driveLink||'')}" placeholder="https://drive.google.com/..." style="flex:1;background:var(--s2);border:1px solid ${f.postStatus==='pending'&&!f.driveLink?'#dc2626':'var(--b)'};border-radius:7px;color:var(--t1);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;">
         ${f.driveLink?`<a href="${esc(f.driveLink)}" target="_blank" rel="noopener" style="flex-shrink:0;background:var(--s2);border:1px solid var(--b);border-radius:6px;color:var(--ac);font-size:11px;font-weight:700;padding:7px 11px;text-decoration:none;">Abrir</a>`:''}
@@ -9701,9 +9707,43 @@ function bind(){
     }
   });
 
-  // Media file
+  // Media file — upload para Firebase Storage e salva URL pública em driveLink
   const socMediaFile=document.getElementById('soc-media-file');
-  if(socMediaFile)socMediaFile.addEventListener('change',e=>{if(e.target.files[0])S.schedule_form.mediaName=e.target.files[0].name;});
+  if(socMediaFile&&!socMediaFile._bound){
+    socMediaFile._bound=true;
+    socMediaFile.addEventListener('change',async e=>{
+      const file=e.target.files[0];
+      if(!file)return;
+      const MAX_MB=50;
+      if(file.size>MAX_MB*1024*1024){alert(`Arquivo muito grande. Máximo ${MAX_MB}MB.`);socMediaFile.value='';return;}
+      S.schedule_form.mediaName=file.name;
+      S.schedule_form.mediaUploading=true;
+      S.schedule_form.driveLink='';
+      render();
+      try{
+        const ext=file.name.split('.').pop();
+        const path=`social_media/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const ref=_storage.ref(path);
+        const task=ref.put(file);
+        task.on('state_changed',snap=>{
+          const pct=Math.round(snap.bytesTransferred/snap.totalBytes*100);
+          const el=document.getElementById('soc-upload-progress');
+          if(el)el.textContent=`Enviando… ${pct}%`;
+        });
+        await task;
+        const url=await ref.getDownloadURL();
+        S.schedule_form.driveLink=url;
+        S.schedule_form.mediaUploading=false;
+        render();
+        showToast('Mídia enviada — URL gerada para publicação','ok');
+      }catch(err){
+        S.schedule_form.mediaUploading=false;
+        S.schedule_form.mediaName='';
+        render();
+        showToast('Erro no upload: '+err.message,'err');
+      }
+    });
+  }
 
   // Clear schedule form
   // Carregar post aprovado do kanban no formulário de agendamento
