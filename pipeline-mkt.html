@@ -4609,8 +4609,18 @@ function modal1(){
             </div>
           </div>
           <div class="tpane ${tab==='delivery'?'on':''}">
+            <div class="fg">
+              <label>Anexar arquivo</label>
+              <div style="border:2px dashed var(--b);border-radius:8px;padding:14px 16px;background:var(--s2);display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <label id="card-upload-label" style="display:inline-flex;align-items:center;gap:6px;background:var(--ac);color:#fff;border-radius:7px;padding:7px 16px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">
+                  <input type="file" id="card-file-input" accept="image/*,video/*,.pdf,.ppt,.pptx,.doc,.docx" style="display:none;">
+                  📎 Selecionar arquivo
+                </label>
+                <span id="card-upload-status" style="font-size:11px;color:var(--t3);">${v.fileLink?'✓ Arquivo vinculado — ou cole um link abaixo':'Imagens, vídeos, PDFs, PPT, Word (máx. 50 MB)'}</span>
+              </div>
+            </div>
             <div class="fg"><label>Link do Arquivo (Drive, Dropbox, Frame.io…)</label>
-              <input type="url" name="fileLink" value="${esc(v.fileLink)}" placeholder="https://drive.google.com/...">
+              <input type="url" name="fileLink" id="card-file-link" value="${esc(v.fileLink)}" placeholder="https://drive.google.com/...">
             </div>
             <div class="fg"><label>Quantidade de Arquivos Gerados</label>
               <input type="number" name="fileCount" value="${esc(String(v.fileCount||''))}" placeholder="0" min="0" style="max-width:140px;">
@@ -7995,6 +8005,47 @@ function bind(){
       if(sel){const opt=document.createElement('option');opt.value=name;opt.textContent=name;opt.selected=true;sel.appendChild(opt);}
       addProjForm.style.display='none';
       render();S.modal.tab='basic';
+    });
+  }
+
+  // Upload de arquivo na aba Entrega do card
+  const cardFileInput=r.querySelector('#card-file-input');
+  if(cardFileInput&&!cardFileInput._bound){
+    cardFileInput._bound=true;
+    cardFileInput.addEventListener('change',async e=>{
+      const file=e.target.files[0];
+      if(!file)return;
+      if(file.size>50*1024*1024){alert('Arquivo muito grande. Máximo 50 MB.');cardFileInput.value='';return;}
+      const statusEl=r.querySelector('#card-upload-status');
+      const labelEl=r.querySelector('#card-upload-label');
+      if(statusEl)statusEl.textContent='Enviando… 0%';
+      if(labelEl){labelEl.style.background='#64748b';labelEl.style.cursor='not-allowed';}
+      cardFileInput.disabled=true;
+      try{
+        const ext=file.name.split('.').pop();
+        const cardId=S.modal?.id||('card_'+Date.now());
+        const path=`cards/${cardId}_${Date.now()}.${ext}`;
+        const ref=_storage.ref(path);
+        const task=ref.put(file);
+        task.on('state_changed',snap=>{
+          const pct=Math.round(snap.bytesTransferred/snap.totalBytes*100);
+          if(statusEl)statusEl.textContent=`Enviando… ${pct}%`;
+        });
+        await task;
+        const url=await ref.getDownloadURL();
+        // Preenche o campo fileLink com a URL pública
+        const fileLinkEl=r.querySelector('#card-file-link');
+        if(fileLinkEl){fileLinkEl.value=url;fileLinkEl.dispatchEvent(new Event('input'));}
+        if(statusEl)statusEl.textContent=`✓ ${file.name} enviado`;
+        if(labelEl){labelEl.style.background='var(--ac)';labelEl.style.cursor='pointer';}
+        cardFileInput.disabled=false;
+        showToast('Arquivo enviado com sucesso','ok');
+      }catch(err){
+        if(statusEl)statusEl.textContent='Erro no upload — tente novamente';
+        if(labelEl){labelEl.style.background='var(--ac)';labelEl.style.cursor='pointer';}
+        cardFileInput.disabled=false;
+        showToast('Erro no upload: '+err.message,'err');
+      }
     });
   }
 
