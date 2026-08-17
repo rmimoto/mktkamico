@@ -7897,8 +7897,6 @@ function bind(){
     fi.addEventListener('change',async e=>{
       const file=e.target.files[0];
       if(!file)return;
-      const MAX_MB=20;
-      if(file.size>MAX_MB*1024*1024){alert(`Arquivo muito grande. Máximo ${MAX_MB}MB.`);fi.value='';return;}
       // Mostra progresso
       const label=fi.closest('label')||fi.parentElement;
       const origText=label?label.innerText:'';
@@ -8015,7 +8013,6 @@ function bind(){
     cardFileInput.addEventListener('change',async e=>{
       const file=e.target.files[0];
       if(!file)return;
-      if(file.size>50*1024*1024){alert('Arquivo muito grande. Máximo 50 MB.');cardFileInput.value='';return;}
       const statusEl=r.querySelector('#card-upload-status');
       const labelEl=r.querySelector('#card-upload-label');
       if(statusEl)statusEl.textContent='Enviando… 0%';
@@ -9779,8 +9776,6 @@ function bind(){
     socMediaFile.addEventListener('change',async e=>{
       const file=e.target.files[0];
       if(!file)return;
-      const MAX_MB=50;
-      if(file.size>MAX_MB*1024*1024){alert(`Arquivo muito grande. Máximo ${MAX_MB}MB.`);socMediaFile.value='';return;}
       S.schedule_form.mediaName=file.name;
       S.schedule_form.mediaUploading=true;
       S.schedule_form.driveLink='';
@@ -10098,7 +10093,6 @@ function bind(){
       const file=fi.files[0];
       document.body.removeChild(fi);
       if(!file)return;
-      if(file.size>50*1024*1024){alert('Arquivo muito grande. Máximo 50MB.');return;}
       S.soc_uploading_pid=pid;
       render();
       try{
