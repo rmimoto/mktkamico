@@ -5898,18 +5898,32 @@ function socKanban(){
             :colPosts.map(p=>{
               const ch=(p.channels||[])[0];const pl=ch?gplat(ch):null;
               const dateStr=p.scheduledAt?p.scheduledAt.slice(0,10):'';
+              const isUploading=S.soc_uploading_pid===p.id;
+              const canAttach=['draft','in_production','pending'].includes(p.status);
               return`<div data-kb-post="${p.id}" style="${cardStyle}">
                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
                   ${pl?`<div style="width:20px;height:20px;border-radius:50%;background:${pl.grad};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${platLogo(pl.id,10)}</div>`:''}
                   <div style="font-size:11px;font-weight:600;color:var(--t1);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.claudeTitle||p.text||'Sem título')}</div>
                 </div>
                 <div style="font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc((p.text||'').slice(0,60))}</div>
-                ${p.driveLink?`<div style="margin-top:6px;font-size:10px;"><a href="${esc(p.driveLink)}" target="_blank" rel="noopener" style="color:var(--ac);font-weight:600;">Ver arte no Drive</a></div>`:''}
-                ${dateStr?`<div style="margin-top:4px;font-size:10px;color:var(--t3);">📅 ${dateStr}</div>`:''}
                 ${p.claudeBriefing?`<div style="margin-top:6px;font-size:10px;color:var(--t3);background:var(--s2);border-radius:5px;padding:5px 7px;line-height:1.4;max-height:52px;overflow:hidden;">📋 ${esc(p.claudeBriefing.slice(0,120))}${p.claudeBriefing.length>120?'…':''}</div>`:''}
+                <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px;">
+                  ${isUploading
+                    ?`<div style="font-size:10px;color:var(--ac);display:flex;align-items:center;gap:5px;"><span id="kb-upload-progress-${p.id}">Enviando… 0%</span></div>`
+                    :p.driveLink
+                      ?`<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+                          <span style="font-size:10px;color:#16a34a;font-weight:700;">✓ Arte anexada</span>
+                          <a href="${esc(p.driveLink)}" target="_blank" rel="noopener" style="font-size:10px;color:var(--ac);" onclick="event.stopPropagation()">Ver</a>
+                          ${canAttach?`<button data-action="soc-attach-media" data-pid="${p.id}" style="margin-left:auto;font-size:9px;background:var(--s2);border:1px solid var(--b);border-radius:4px;color:var(--t3);padding:2px 6px;cursor:pointer;font-family:inherit;" onclick="event.stopPropagation()">Trocar</button>`:''}
+                        </div>`
+                      :canAttach
+                        ?`<button data-action="soc-attach-media" data-pid="${p.id}" style="width:100%;background:var(--s2);border:1.5px dashed var(--b);border-radius:6px;color:var(--t3);padding:6px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;text-align:center;" onclick="event.stopPropagation()">📎 Anexar arte</button>`
+                        :''}
+                </div>
+                ${dateStr?`<div style="margin-top:4px;font-size:10px;color:var(--t3);">📅 ${dateStr}</div>`:''}
                 ${p.status==='pending'&&isGestor?`<div style="display:flex;gap:5px;margin-top:8px;">
-                  <button data-action="soc-approve-post" data-pid="${p.id}" style="flex:1;background:#7c3aed;color:#fff;border:none;border-radius:5px;padding:4px;font-size:10px;font-weight:700;cursor:pointer;">Aprovar</button>
-                  <button data-action="soc-reject-post" data-pid="${p.id}" style="flex:1;background:var(--s2);color:#dc2626;border:1px solid #fca5a5;border-radius:5px;padding:4px;font-size:10px;font-weight:700;cursor:pointer;">Recusar</button>
+                  <button data-action="soc-approve-post" data-pid="${p.id}" style="flex:1;background:#7c3aed;color:#fff;border:none;border-radius:5px;padding:4px;font-size:10px;font-weight:700;cursor:pointer;" onclick="event.stopPropagation()">Aprovar</button>
+                  <button data-action="soc-reject-post" data-pid="${p.id}" style="flex:1;background:var(--s2);color:#dc2626;border:1px solid #fca5a5;border-radius:5px;padding:4px;font-size:10px;font-weight:700;cursor:pointer;" onclick="event.stopPropagation()">Recusar</button>
                 </div>`:''}
                 ${p.status==='failed'?`<div style="margin-top:6px;font-size:10px;color:#dc2626;font-weight:600;">❌ ${esc((p.failReason||'').slice(0,60))}</div>`:''}
               </div>`;
@@ -10016,6 +10030,51 @@ function bind(){
     save_soc_post();
     showToast('Post devolvido para ajuste (Em produção)','ok');
     render();
+  }));
+
+  // Anexar arte diretamente no card do kanban
+  r.querySelectorAll('[data-action="soc-attach-media"]').forEach(btn=>btn.addEventListener('click',e=>{
+    e.stopPropagation();
+    const pid=btn.dataset.pid;
+    const p=(S.social_posts||[]).find(x=>x.id===pid);
+    if(!p)return;
+    const fi=document.createElement('input');
+    fi.type='file';
+    fi.accept='image/*,video/*';
+    fi.style.display='none';
+    document.body.appendChild(fi);
+    fi.addEventListener('change',async()=>{
+      const file=fi.files[0];
+      document.body.removeChild(fi);
+      if(!file)return;
+      if(file.size>50*1024*1024){alert('Arquivo muito grande. Máximo 50MB.');return;}
+      S.soc_uploading_pid=pid;
+      render();
+      try{
+        const ext=file.name.split('.').pop();
+        const path=`social_media/${pid}_${Date.now()}.${ext}`;
+        const ref=_storage.ref(path);
+        const task=ref.put(file);
+        task.on('state_changed',snap=>{
+          const pct=Math.round(snap.bytesTransferred/snap.totalBytes*100);
+          const el=document.getElementById(`kb-upload-progress-${pid}`);
+          if(el)el.textContent=`Enviando… ${pct}%`;
+        });
+        await task;
+        const url=await ref.getDownloadURL();
+        p.driveLink=url;
+        p.mediaName=file.name;
+        S.soc_uploading_pid=null;
+        save_soc_post();
+        showToast('Arte anexada ao post','ok');
+        render();
+      }catch(err){
+        S.soc_uploading_pid=null;
+        render();
+        showToast('Erro no upload: '+err.message,'err');
+      }
+    });
+    fi.click();
   }));
 
   // ── BIBLIOTECA DE ASSETS ────────────────────────────────────────────
