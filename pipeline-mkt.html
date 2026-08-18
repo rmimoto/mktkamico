@@ -1724,6 +1724,39 @@ function _fsDeleteDoc(col,id){
 
 function save1(){_fsSaveArray('cards',S.cards);toastSaved();}
 function save2(){_fsSaveArray('requests',S.requests);toastSaved();}
+
+// Mapeamento de canais do pipeline para IDs de plataformas sociais
+const CHANNEL_TO_PLATFORM = {
+  'Instagram':'instagram','Facebook':'facebook','TikTok':'tiktok',
+  'LinkedIn':'linkedin','YouTube':'youtube','Threads':'threads','Pinterest':'pinterest',
+};
+
+// Bridge automático: card chegou em "Finalizar Social Media" → cria social_post se ainda não existe
+function maybeAutoCreateSocialPost(card){
+  if(card.status!=='final-social')return;
+  if(!S.social_posts)S.social_posts=[];
+  // Evita duplicata
+  if(S.social_posts.find(p=>p.fromCardId===card.id))return;
+  const platforms=(card.channel||[]).map(ch=>CHANNEL_TO_PLATFORM[ch]).filter(Boolean);
+  const post={
+    id:uid(),
+    fromCardId:card.id,
+    claudeTitle:card.title||'',
+    text:card.caption||'',
+    claudeBriefing:card.briefing||'',
+    driveLink:card.fileLink||'',
+    hashtags:'',
+    channels:platforms,
+    profiles:[],
+    scheduledAt:card.publishDate?`${card.publishDate}T18:00`:'',
+    status:'in_production',
+    createdAt:Date.now(),
+    history:[{ts:Date.now(),user:'Sistema',action:'criado automaticamente do card do pipeline'}],
+  };
+  S.social_posts.push(post);
+  save_soc_post();
+  showToast(`Post criado em Criar Conteúdo → Redes Sociais: "${card.title||'sem título'}"`, 'ok', 4000);
+}
 function save_soc_acc(){_fsSaveArray('social_accounts',S.social_accounts);toastSaved();}
 function save_soc_post(){_fsSaveArray('social_posts',S.social_posts);toastSaved();}
 function save_soc_comp(){_fsSaveArray('social_competitors',S.social_competitors||[]);toastSaved();}
@@ -5673,21 +5706,27 @@ function socSchedule(){
   const col='border-right:1px solid var(--b);overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:14px;background:var(--s1);';
   const secLabel=(n,t,extra='',required=false)=>`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><span style="font-size:12px;font-weight:700;color:var(--t1);"><span style="color:var(--ac);margin-right:5px;">${n}.</span>${t}${required?`<span style="color:#dc2626;margin-left:3px;" title="Campo obrigatório">*</span>`:' <span style="font-size:10px;font-weight:400;color:var(--t3);">(opcional)</span>'}</span>${extra}</div>`;
 
-  // Posts aprovados no kanban aguardando agendamento
-  const approvedPosts=(S.social_posts||[]).filter(p=>p.status==='approved');
+  // Posts prontos para agendar: aprovados no kanban OU vindos do bridge do pipeline
+  const approvedPosts=(S.social_posts||[]).filter(p=>
+    p.status==='approved' ||
+    (p.fromCardId && ['in_production','draft'].includes(p.status))
+  );
   const approvedBanner=approvedPosts.length?`
     <div style="background:var(--s1);border-bottom:1px solid var(--b);padding:12px 20px;flex-shrink:0;">
       <div style="font-size:11px;font-weight:700;color:var(--t1);margin-bottom:8px;display:flex;align-items:center;gap:6px;">
-        <span style="background:#dcfce7;color:#166534;border-radius:5px;padding:2px 8px;">✓ ${approvedPosts.length} post${approvedPosts.length>1?'s':''} aprovado${approvedPosts.length>1?'s':''} aguardando agendamento</span>
-        <span style="font-size:10px;color:var(--t3);font-weight:400;">← vem do Kanban em Criar Conteúdo</span>
+        <span style="background:#dcfce7;color:#166534;border-radius:5px;padding:2px 8px;">📋 ${approvedPosts.length} post${approvedPosts.length>1?'s':''} aguardando agendamento</span>
+        <span style="font-size:10px;color:var(--t3);font-weight:400;">← vindo do pipeline de Criar Conteúdo</span>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         ${approvedPosts.map(p=>{
-          const plat=gplat((S.social_accounts||[]).find(a=>(p.profiles||[]).includes(a.id))?.platform||'');
+          const fromCard=p.fromCardId?(S.cards||[]).find(c=>c.id===p.fromCardId):null;
           const isLoaded=S.schedule_form?._fromPostId===p.id;
-          return`<div style="border:1.5px solid ${isLoaded?'var(--ac)':'var(--b)'};border-radius:9px;padding:10px 12px;background:${isLoaded?'var(--ac)0d':'var(--s2)'};min-width:180px;max-width:240px;cursor:pointer;flex-shrink:0;" data-action="soc-load-approved" data-pid="${esc(p.id)}">
+          const isPipeline=!!p.fromCardId;
+          return`<div style="border:1.5px solid ${isLoaded?'var(--ac)':isPipeline?'#8b5cf6':'var(--b)'};border-radius:9px;padding:10px 12px;background:${isLoaded?'var(--ac)0d':isPipeline?'#8b5cf608':'var(--s2)'};min-width:180px;max-width:240px;cursor:pointer;flex-shrink:0;" data-action="soc-load-approved" data-pid="${esc(p.id)}">
+            ${isPipeline?`<div style="font-size:9px;font-weight:700;color:#8b5cf6;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px;">📌 Do pipeline</div>`:''}
             <div style="font-size:11px;font-weight:700;color:var(--t1);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.claudeTitle||p.text?.slice(0,40)||'(sem título)')}</div>
             <div style="font-size:10px;color:var(--t3);">${esc((p.text||'').slice(0,50))}${(p.text||'').length>50?'…':''}</div>
+            ${p.driveLink?`<div style="font-size:10px;color:#16a34a;margin-top:3px;">✓ Arte anexada</div>`:`<div style="font-size:10px;color:#f59e0b;margin-top:3px;">⚠ Sem arte</div>`}
             ${isLoaded?`<div style="font-size:10px;color:var(--ac);font-weight:700;margin-top:4px;">✓ Carregado no formulário</div>`:`<div style="font-size:10px;color:var(--ac);font-weight:600;margin-top:4px;">Clique para agendar →</div>`}
           </div>`;
         }).join('')}
@@ -8954,6 +8993,7 @@ function bind(){
       const u=AUTH.users.find(x=>x.name===name);
       if(u)pushNotif('status',`Card "${S.cards[ci].title}" foi aprovado por ${me.name}`,{cardId:id,pipe:'content',targetUserId:u.id});
     });
+    maybeAutoCreateSocialPost(S.cards[ci]);
     save1();_modal1Dirty=false;S.modal.open=false;render();
   });
 
@@ -9100,7 +9140,7 @@ function bind(){
       runAutomations(newCard,'create','content');
     }
     const cardToAuto=eid?S.cards.find(c=>c.id===eid):S.cards[S.cards.length-1];
-    if(cardToAuto)runAutomations(cardToAuto,'any_save','content');
+    if(cardToAuto){runAutomations(cardToAuto,'any_save','content');maybeAutoCreateSocialPost(cardToAuto);}
     // Notificar responsáveis atribuídos
     const savedCard=S.cards.find(c=>c.id===(eid||S.cards[S.cards.length-1]?.id));
     if(savedCard)notifAssigned(savedCard,'content');
